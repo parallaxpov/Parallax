@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARALLAX — Исследователь</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080810;
+  --bg2:     #0d0d18;
+  --cyan:    #00e5cc;
+  --cyan-mid: rgba(0,229,204,0.6);
+  --cyan-dim: rgba(0,229,204,0.25);
+  --red:     #e53935;
+  --red-dim: rgba(229,57,53,0.22);
+  --purple:  #7c3aed;
+  --purple-dim: rgba(124,58,237,0.35);
+  --text:    #d4f0ec;
+  --text-mid: rgba(0,229,204,0.6);
+  --text-dim: rgba(124,58,237,0.7);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --bc: 1px solid rgba(0,229,204,0.18);
+  --br: 1px solid rgba(229,57,53,0.22);
+  --bd: 1px solid rgba(255,255,255,0.05);
+  --gc: 0 0 24px rgba(0,229,204,0.1);
+  --gr: 0 0 24px rgba(229,57,53,0.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;overflow-x:hidden}
+
+/* Сетка */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,204,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,204,0.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+/* Сканлайны */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,0.1) 3px,rgba(0,0,0,0.1) 4px);pointer-events:none;z-index:999}
+/* Фоновый ореол */
+.bg-glow{position:fixed;inset:0;background:radial-gradient(ellipse 25% 70% at 0% 50%,rgba(124,58,237,0.07) 0%,transparent 70%),radial-gradient(ellipse 25% 70% at 100% 50%,rgba(124,58,237,0.07) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 50% 0%,rgba(0,229,204,0.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+section,nav,footer,.modal-backdrop{position:relative;z-index:1}
+
+/* Утилиты */
+.mono{font-family:var(--mono)}.cyan{color:var(--cyan)}.red{color:var(--red)}
+.container{max-width:1120px;margin:0 auto;padding:0 44px}
+.section-label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase;margin-bottom:48px;display:flex;align-items:center;gap:14px}
+.section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(124,58,237,0.3),transparent)}
+.corner{position:absolute;width:14px;height:14px}
+.corner::before,.corner::after{content:'';position:absolute}
+.corner::before{width:1px;height:100%;background:var(--cyan);opacity:.5}
+.corner::after{width:100%;height:1px;background:var(--cyan);opacity:.5}
+.corner.tl{top:0;left:0}.corner.tr{top:0;right:0;transform:rotate(90deg)}.corner.bl{bottom:0;left:0;transform:rotate(-90deg)}.corner.br{bottom:0;right:0;transform:rotate(180deg)}
+.cursor{display:inline-block;width:2px;height:1em;background:var(--cyan);margin-left:2px;vertical-align:text-bottom;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;display:flex;align-items:center;background:rgba(8,8,16,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(0,229,204,.08)}
+nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,204,.22),transparent)}
+.nav-inner{width:100%;max-width:1120px;margin:0 auto;padding:0 44px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.22em;text-decoration:none;display:flex;align-items:center;gap:10px}
+.logo-icon{width:20px;height:20px;position:relative;flex-shrink:0}
+.logo-icon .sq1{position:absolute;width:13px;height:13px;border:1.5px solid var(--cyan);top:0;left:0}
+.logo-icon .sq2{position:absolute;width:13px;height:13px;border:1.5px solid var(--red);bottom:0;right:0}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:11px;color:var(--text-mid);text-decoration:none;letter-spacing:.1em;transition:color .2s}
+.nav-links a:hover{color:var(--cyan)}
+.lang-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--text-mid);padding:4px 12px;cursor:pointer;transition:all .2s}
+.lang-toggle:hover{color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 12px rgba(0,229,204,.2)}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;align-items:center;padding:100px 0 80px;position:relative;overflow:hidden}
+.hex-corner{position:absolute;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.05em}
+.hex-tl{top:72px;left:44px}.hex-tr{top:72px;right:44px}.hex-br{bottom:32px;right:44px}
+.ch{position:absolute;font-family:var(--mono);font-size:18px;color:rgba(0,229,204,.15)}
+.ch-1{top:28%;right:12%}.ch-2{bottom:22%;left:7%}.ch-3{top:62%;right:32%;font-size:12px}
+
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;width:100%}
+
+.hero-sys{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.18em;margin-bottom:20px;opacity:0;animation:fadeUp .5s ease forwards .2s}
+.hero-name{font-family:var(--mono);font-size:clamp(36px,5vw,68px);font-weight:700;letter-spacing:.06em;line-height:1;margin-bottom:16px;background:linear-gradient(to top,var(--cyan) 0%,#a8fdf5 55%,#fff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px rgba(0,229,204,.35));opacity:0;animation:fadeUp .5s ease forwards .5s;min-height:1.15em}
+.hero-position{font-family:var(--mono);font-size:clamp(12px,1.5vw,15px);color:var(--text-mid);margin-bottom:28px;opacity:0;animation:fadeUp .5s ease forwards 1.8s;min-height:1.5em}
+.hero-tagline{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:44px;opacity:0;animation:fadeUp .5s ease forwards 2.2s}
+.hero-tagline .prompt{color:var(--cyan);margin-right:6px}
+.hero-cta{display:flex;gap:14px;opacity:0;animation:fadeUp .5s ease forwards 2.5s}
+
+.btn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;padding:10px 24px;text-decoration:none;transition:all .2s;cursor:pointer;border:none;display:inline-block}
+.btn-primary{background:var(--cyan);color:var(--bg);font-weight:700}
+.btn-primary:hover{box-shadow:0 0 32px rgba(0,229,204,.4);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--cyan);border:1px solid rgba(0,229,204,.4)}
+.btn-ghost:hover{border-color:var(--cyan);box-shadow:0 0 14px rgba(0,229,204,.2)}
+
+/* Hero visual */
+.hero-visual{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hero-logo-img{width:clamp(260px,38vw,440px);height:auto;filter:drop-shadow(0 0 32px rgba(0,229,204,.25)) drop-shadow(0 0 12px rgba(229,57,53,.15));animation:logoFloat 6s ease-in-out infinite,logoGlitch 12s infinite}
+
+/* ABOUT */
+#about{padding:100px 0;border-top:var(--bd)}
+.about-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:start}
+.terminal-window{background:var(--bg2);border:var(--bc);position:relative;box-shadow:var(--gc)}
+.terminal-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:var(--bc);background:rgba(0,229,204,.04)}
+.terminal-title{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.12em}
+.terminal-controls{display:flex;gap:6px}
+.terminal-controls span{width:9px;height:9px;border-radius:50%;background:var(--text-dim);opacity:.4}
+.terminal-body{padding:22px 24px;font-family:var(--mono);font-size:13px;line-height:2}
+.t-prompt{color:var(--text-dim)}.t-cmd{color:var(--cyan)}
+.t-out{color:var(--text);padding-left:14px;opacity:0;transition:opacity .35s}
+.t-out.shown{opacity:1}
+.t-out::before{content:'> ';color:var(--text-dim)}
+.t-gap{display:block;height:6px}.t-comment{color:var(--text-dim);font-style:italic}
+
+.about-sysinfo{display:flex;flex-direction:column;gap:14px}
+.sysinfo-card{background:var(--bg2);border:var(--bd);padding:18px 20px;transition:border-color .3s}
+.sysinfo-card:hover{border-color:rgba(124,58,237,.3)}
+.si-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.04)}
+.si-row{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;padding:3px 0}
+.si-key{color:var(--text-dim)}.si-val{color:var(--text-mid);text-align:right}
+.si-val.c{color:var(--cyan)}.si-val.r{color:var(--red)}.si-val.p{color:var(--purple)}
+.uptime-bar{margin-top:8px;height:2px;background:rgba(255,255,255,.05);overflow:hidden}
+.uptime-fill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width 1.5s cubic-bezier(.4,0,.2,1) .3s}
+
+/* PROJECTS */
+#projects{padding:100px 0;border-top:var(--bd)}
+.projects-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.project-card{position:relative;padding:22px;background:var(--bg2);transition:all .3s;cursor:pointer;overflow:hidden}
+.project-card.cyan-card{border:var(--bc)}.project-card.cyan-card:hover{border-color:rgba(0,229,204,.4);box-shadow:var(--gc);transform:translateY(-2px)}
+.project-card.red-card{border:var(--br)}
+.project-hex{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:9px}
+.project-name{font-family:var(--mono);font-size:20px;font-weight:700;margin-bottom:10px}
+.project-name.c{color:var(--cyan)}.project-name.r{color:var(--red)}
+.project-desc{font-size:13px;color:var(--text-mid);margin-bottom:16px;line-height:1.6}
+.project-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:3px 9px;border:1px solid;text-transform:uppercase}
+.tag.c{border-color:rgba(0,229,204,.25);color:var(--cyan)}.tag.r{border-color:rgba(229,57,53,.25);color:var(--red)}
+.project-action{font-family:var(--mono);font-size:11px;letter-spacing:.1em;display:flex;align-items:center;gap:6px;transition:gap .2s}
+.project-action::after{content:'→'}.project-action.c{color:var(--cyan)}.project-action.r{color:var(--red)}
+.project-card:hover .project-action{gap:10px}
+
+/* CARAI encrypted */
+.carai-encrypted{font-family:var(--mono);font-size:11px;color:rgba(229,57,53,.32);line-height:1.9;margin-bottom:16px;letter-spacing:.04em;user-select:none}
+.carai-encrypted .enc-line{display:block}
+
+/* CARAI easter egg */
+.keep-out-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;overflow:hidden;z-index:2}
+.carai-card:hover .keep-out-overlay:not(.permanent){animation:koIn .3s ease forwards,koOut .5s ease 10s forwards}
+.keep-out-overlay.permanent{opacity:1!important;animation:none!important}
+.keep-out-tape{position:absolute;width:220%;height:26px;display:flex;align-items:center;background:repeating-linear-gradient(90deg,var(--red) 0px,var(--red) 72px,#000 72px,#000 144px);transform:rotate(-7deg)}
+.keep-out-tape::before{content:'KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ ';font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.25em;color:#fff;padding:0 12px;white-space:nowrap}
+.tape-1{top:20%;left:-30%}.tape-2{top:50%;left:-30%}.tape-3{top:76%;left:-30%;transform:rotate(-5deg)}
+@keyframes koIn{from{opacity:0}to{opacity:1}}@keyframes koOut{from{opacity:1}to{opacity:0}}
+
+.access-denied-overlay{display:none;position:absolute;inset:0;background:rgba(229,57,53,.06);align-items:center;justify-content:center;flex-direction:column;gap:8px;z-index:3}
+.access-denied-overlay.visible{display:flex}
+.ad-text{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--red);letter-spacing:.2em;text-shadow:0 0 30px rgba(229,57,53,.7);animation:adPulse 2s ease-in-out infinite}
+.ad-sub{font-family:var(--mono);font-size:11px;color:rgba(229,57,53,.5);letter-spacing:.15em}
+@keyframes adPulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes shake{0%{transform:translateX(0)}15%{transform:translateX(-9px) rotate(-.4deg)}30%{transform:translateX(9px) rotate(.4deg)}50%{transform:translateX(-6px)}70%{transform:translateX(5px)}85%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+.carai-card.shaking{animation:shake .5s ease;box-shadow:0 0 0 2px var(--red),0 0 40px rgba(229,57,53,.3)!important}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(8,8,16,.92);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:40px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--bg2);border:var(--bc);box-shadow:var(--gc);max-width:640px;width:100%}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:var(--bc)}
+.modal-title{font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:.12em}
+.modal-close{font-family:var(--mono);font-size:16px;color:var(--text-dim);cursor:pointer;background:none;border:none;transition:color .2s}
+.modal-close:hover{color:var(--red)}
+.modal-body{padding:28px 22px}
+.modal-body h3{font-family:var(--mono);font-size:20px;color:var(--cyan);margin-bottom:6px}
+.modal-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:18px;letter-spacing:.12em}
+.modal-body p{font-size:14px;color:var(--text-mid);line-height:1.7;margin-bottom:14px}
+.modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+
+/* FOCUS */
+#focus{padding:100px 0;border-top:var(--bd)}
+.focus-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:20px;align-items:start}
+.trace-log-body{padding:0;max-height:280px;overflow-y:auto}
+.trace-log-body::-webkit-scrollbar{width:3px}
+.trace-log-body::-webkit-scrollbar-thumb{background:rgba(0,229,204,.2)}
+.log-entry{display:grid;grid-template-columns:88px 65px 1fr;gap:8px;padding:7px 18px;font-family:var(--mono);font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.03);opacity:0;transform:translateX(-6px);transition:background .15s}
+.log-entry.visible{animation:logSlide .3s ease forwards}
+.log-entry:hover{background:rgba(255,255,255,.02)}
+@keyframes logSlide{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.log-time{color:var(--text-dim)}.log-level.info{color:var(--cyan)}.log-level.warn{color:#f59e0b}.log-level.ok{color:#22c55e}.log-level.pend{color:var(--text-dim)}
+.log-msg{color:var(--text-mid)}.log-msg.hi{color:var(--text)}
+
+/* SKILLS */
+#skills{padding:100px 0;border-top:var(--bd)}
+.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+.skills-col-title{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:22px;padding-bottom:10px;border-bottom:var(--bd)}
+.skills-col-title.conf{color:var(--cyan)}.skills-col-title.lrn{color:var(--purple)}
+.skill-item{margin-bottom:14px}
+.skill-header{display:flex;justify-content:space-between;margin-bottom:5px}
+.skill-name{font-family:var(--mono);font-size:12px;color:var(--text)}.skill-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.skill-bar-track{height:2px;background:rgba(255,255,255,.05);overflow:hidden}
+.skill-bar-fill{height:100%;width:0;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+.skill-bar-fill.c{background:var(--cyan);box-shadow:0 0 8px rgba(0,229,204,.5)}.skill-bar-fill.p{background:var(--purple);box-shadow:0 0 8px rgba(124,58,237,.5)}
+
+/* PUBLICATIONS */
+#publications{padding:100px 0;border-top:var(--bd)}
+.pub-note{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:28px}
+.pub-list{display:flex;flex-direction:column}
+.pub-item{display:grid;grid-template-columns:110px 1fr auto;gap:20px;align-items:center;padding:16px 0;border-bottom:var(--bd);text-decoration:none;color:inherit;transition:padding-left .2s}
+.pub-item:first-child{border-top:var(--bd)}
+.pub-item.locked{opacity:.45;cursor:default}.pub-item.linked:hover{padding-left:8px}.pub-item.linked:hover .pub-title{color:var(--cyan)}
+.pub-date{font-family:var(--mono);font-size:11px;color:var(--text-dim)}.pub-title{font-size:13px;color:var(--text);transition:color .2s;display:flex;align-items:center;gap:8px}
+.lock-icon{font-size:11px;color:var(--text-dim)}.pub-tag{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;white-space:nowrap}
+
+/* CONTACTS */
+#contacts{padding:100px 0;border-top:var(--bd)}
+.contacts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.contact-card{background:var(--bg2);border:var(--bd);padding:26px;text-decoration:none;transition:all .2s;display:block}
+.contact-card:hover{border-color:rgba(0,229,204,.2);box-shadow:var(--gc);transform:translateY(-2px)}
+.contact-platform{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase;margin-bottom:7px}
+.contact-handle{font-family:var(--mono);font-size:15px;color:var(--cyan);margin-bottom:4px}
+.contact-desc{font-size:12px;color:var(--text-mid)}
+
+/* FOOTER */
+footer{border-top:var(--bd);padding:36px 0}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer-log{font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:2.2}
+.footer-log .ok{color:#22c55e}.footer-log .warn{color:#f59e0b}
+.footer-copy{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:right;line-height:2}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes logoGlitch{0%,90%,100%{filter:drop-shadow(0 0 32px rgba(0,229,204,.25)) drop-shadow(0 0 12px rgba(229,57,53,.15))}91%{filter:drop-shadow(4px 0 var(--red)) drop-shadow(-4px 0 rgba(0,229,204,.8)) drop-shadow(0 0 32px rgba(0,229,204,.25));transform:skewX(-1deg)}92%{filter:drop-shadow(0 0 32px rgba(0,229,204,.25)) drop-shadow(0 0 12px rgba(229,57,53,.15));transform:none}93%{filter:drop-shadow(-3px 0 var(--red)) drop-shadow(0 0 32px rgba(0,229,204,.25));transform:skewX(.8deg)}94%{filter:drop-shadow(0 0 32px rgba(0,229,204,.25)) drop-shadow(0 0 12px rgba(229,57,53,.15));transform:none}}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#hero" class="nav-logo">
+      <div class="logo-icon"><div class="sq1"></div><div class="sq2"></div></div>PARALLAX
+    </a>
+    <ul class="nav-links">
+      <li><a href="#about"        data-i18n="nav_about">О себе</a></li>
+      <li><a href="#projects"     data-i18n="nav_projects">Проекты</a></li>
+      <li><a href="#focus"        data-i18n="nav_focus">Сейчас</a></li>
+      <li><a href="#skills"       data-i18n="nav_skills">Навыки</a></li>
+      <li><a href="#publications" data-i18n="nav_pub">Публикации</a></li>
+      <li><a href="#contacts"     data-i18n="nav_contacts">Контакты</a></li>
+    </ul>
+    <button class="lang-toggle" id="langToggle">EN</button>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="container">
+    <div class="hex-corner hex-tl">/0xAC:19F</div>
+    <div class="hex-corner hex-tr">SYS://ONLINE</div>
+    <div class="hex-corner hex-br">ID: PRX-0x7F2A</div>
+    <div class="ch ch-1">+</div><div class="ch ch-2">+</div><div class="ch ch-3">+</div>
+    <div class="hero-grid">
+      <div class="hero-content">
+        <div class="hero-sys" data-i18n="hero_sys">// инициализация профиля</div>
+        <div class="hero-name" id="heroName"></div>
+        <div class="hero-position" id="heroPos"></div>
+        <div class="hero-tagline"><span class="prompt">›</span><span data-i18n="hero_tagline">исследую то, что другие предпочитают не замечать</span></div>
+        <div class="hero-cta">
+          <a href="#projects" class="btn btn-primary" data-i18n="hero_btn1">Проекты</a>
+          <a href="#contacts" class="btn btn-ghost"   data-i18n="hero_btn2">Контакты</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img src="logo.png" alt="PARALLAX" class="hero-logo-img">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="container">
+    <div class="section-label">// 01 — <span data-i18n="about_label">о себе</span></div>
+    <div class="about-grid">
+      <div class="terminal-window reveal" id="aboutTerminal">
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div class="terminal-titlebar">
+          <span class="terminal-title">TERMINAL://PARALLAX</span>
+          <div class="terminal-controls"><span></span><span></span><span></span></div>
+        </div>
+        <div class="terminal-body" id="whoamiBody">
+          <div><span class="t-prompt">user@parallax:~$</span> <span class="t-cmd">whoami</span></div>
+          <span class="t-gap"></span>
+          <div class="t-out" data-i18n="about_1">студент БГТУ — ИБ автоматизированных систем, 4-й курс</div>
+          <div class="t-out" data-i18n="about_2">исследователь: ИИ как субъект, этика, парасоциальные системы</div>
+          <div class="t-out" data-i18n="about_3">смотрю на одно явление с нескольких точек одновременно</div>
+          <div class="t-out" data-i18n="about_4">это и называется параллаксом</div>
+          <span class="t-gap"></span>
+          <div><span class="t-prompt">user@parallax:~$</span> <span class="cursor"></span></div>
+        </div>
+      </div>
+      <div class="about-sysinfo reveal" style="transition-delay:.15s">
+        <div class="sysinfo-card">
+          <div class="si-label">// system.info</div>
+          <div class="si-row"><span class="si-key">role</span><span class="si-val c">security researcher</span></div>
+          <div class="si-row"><span class="si-key">location</span><span class="si-val">Bryansk, RU</span></div>
+          <div class="si-row"><span class="si-key">year</span><span class="si-val">4 / 5.5</span></div>
+          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">InfoSec × AI × Psychology</span></div>
+          <div class="si-row"><span class="si-key">status</span><span class="si-val" style="color:#22c55e">online</span></div>
+        </div>
+        <div class="sysinfo-card">
+          <div class="si-label">// target.acquisition</div>
+          <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val c">Positive Technologies</span></div>
+          <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val">BI.ZONE</span></div>
+          <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val">Sber</span></div>
+          <div class="si-row"><span class="si-key">research</span><span class="si-val p" data-i18n="si_open">открыт к предложениям</span></div>
+          <div class="uptime-bar"><div class="uptime-fill" id="uptimeFill"></div></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:5px">career_progress: 73%</div>
+        </div>
+        <div class="sysinfo-card">
+          <div class="si-label">// certifications</div>
+          <div class="si-row"><span class="si-key">PT NAD L1</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row"><span class="si-key">PT NAD L2</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row"><span class="si-key">PT NAD L3</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row"><span class="si-key">certificate</span><span class="si-val" style="color:#f59e0b">[PENDING]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="container">
+    <div class="section-label">// 02 — <span data-i18n="proj_label">проекты</span></div>
+    <div class="projects-grid">
+      <div class="project-card cyan-card reveal" onclick="openModal()">
+        <div class="corner tl"></div><div class="corner br"></div>
+        <div class="project-hex">0x01</div>
+        <div class="project-name c">SecureAI</div>
+        <div class="project-desc" data-i18n="proj_sai_desc">Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарративом, системой доверия и эмоциональным анализом.</div>
+        <div class="project-tags">
+          <span class="tag c" data-i18n="tag_edu">Образование</span>
+          <span class="tag c">AI</span>
+          <span class="tag c" data-i18n="tag_game">Геймификация</span>
+          <span class="tag c" data-i18n="tag_dip">Диплом</span>
+        </div>
+        <div class="project-action c" data-i18n="proj_more">подробнее</div>
+      </div>
+      <div class="project-card red-card carai-card reveal" id="caraiCard" style="transition-delay:.1s">
+        <div class="keep-out-overlay" id="keepOutOverlay">
+          <div class="keep-out-tape tape-1"></div>
+          <div class="keep-out-tape tape-2"></div>
+          <div class="keep-out-tape tape-3"></div>
+        </div>
+        <div class="access-denied-overlay" id="accessDenied">
+          <div class="ad-text">[ACCESS DENIED]</div>
+          <div class="ad-sub" data-i18n="carai_denied">доступ будет открыт позже</div>
+        </div>
+        <div id="caraiContent">
+          <div class="project-hex">0x02</div>
+          <div class="project-name r">CARAI</div>
+          <div class="carai-encrypted" aria-hidden="true">
+            <span class="enc-line">4x3A 9f2B c7D1 0e8F 3a5C b2E9</span>
+            <span class="enc-line">7d4A [REDACTED] 8c0D 5e3F 1f6B</span>
+            <span class="enc-line">0x4d 0x79 [NULL] 0x73 0x74 0x65</span>
+            <span class="enc-line">ÿÿ NUL ÿÿ [ENCRYPTED] NUL ÿÿ</span>
+          </div>
+          <div class="project-action r" data-i18n="proj_access">получить доступ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal-backdrop" id="secureAIModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">// PROJECT_0x01 — SecureAI</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>SecureAI</h3>
+      <div class="modal-sub" data-i18n="modal_sub">дипломная работа · БГТУ · 2025</div>
+      <p data-i18n="modal_p1">Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.</p>
+      <p data-i18n="modal_p2">Ключевые механики: система доверия между пользователем и ИИ-персонажем, эмоциональный анализ поведения учащегося, адаптивные сценарии угроз.</p>
+      <div class="modal-tags">
+        <span class="tag c" data-i18n="tag_edu">Образование</span>
+        <span class="tag c">AI Narrative</span>
+        <span class="tag c" data-i18n="tag_game">Геймификация</span>
+        <span class="tag c">Python</span>
+        <span class="tag c">InfoSec</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="focus">
+  <div class="container">
+    <div class="section-label">// 03 — <span data-i18n="focus_label">сейчас</span></div>
+    <div class="focus-grid">
+      <div class="terminal-window reveal">
+        <div class="terminal-titlebar">
+          <span class="terminal-title">CURRENT_STATUS</span>
+          <div class="terminal-controls"><span></span><span></span><span></span></div>
+        </div>
+        <div class="terminal-body" style="font-size:12px">
+          <div><span class="t-prompt">$</span> <span class="t-cmd" data-i18n="focus_cmd">focus --current</span></div>
+          <span class="t-gap"></span>
+          <div class="t-out" data-i18n="status_1">PT NAD: сертификаты L1/L2/L3 ✓</div>
+          <div class="t-out" data-i18n="status_2">дипломная работа: в процессе</div>
+          <div class="t-out" data-i18n="status_3">CARAI prompt v14: тестирование</div>
+          <div class="t-out" data-i18n="status_4">Habr статья #01: черновик</div>
+          <span class="t-gap"></span>
+          <div class="t-comment" data-i18n="status_comment">// открыт к коллаборации</div>
+          <span class="t-gap"></span>
+          <div><span class="t-prompt">$</span> <span class="cursor"></span></div>
+        </div>
+      </div>
+      <div class="terminal-window reveal" style="transition-delay:.12s">
+        <div class="terminal-titlebar">
+          <span class="terminal-title">TRACE LOG</span>
+          <div class="terminal-controls"><span></span><span></span><span></span></div>
+        </div>
+        <div class="trace-log-body" id="traceLog">
+          <div class="log-entry" data-delay="0"><span class="log-time">2025-05-24</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_1">PT NAD L3 завершён</span></div>
+          <div class="log-entry" data-delay="120"><span class="log-time">2025-05-20</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_2">заявка на бета-тест PT NAD</span></div>
+          <div class="log-entry" data-delay="240"><span class="log-time">2025-05-15</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_3">CARAI: промпт v14 → тестирование</span></div>
+          <div class="log-entry" data-delay="360"><span class="log-time">2025-05-10</span><span class="log-level warn">[WARN]</span><span class="log-msg" data-i18n="log_4">статья #01: черновик не завершён</span></div>
+          <div class="log-entry" data-delay="480"><span class="log-time">2025-05-03</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_5">исследование: парасоциальная динамика</span></div>
+          <div class="log-entry" data-delay="600"><span class="log-time">2025-04-28</span><span class="log-level pend">[···]</span><span class="log-msg" data-i18n="log_6">сайт-портфолио: в разработке</span></div>
+          <div class="log-entry" data-delay="720"><span class="log-time">2025-04-15</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_7">статья #02: AR деанонимизация — идея</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="container">
+    <div class="section-label">// 04 — <span data-i18n="skills_label">навыки</span></div>
+    <div class="skills-grid reveal">
+      <div>
+        <div class="skills-col-title conf" data-i18n="skills_conf">// Confident — освоено</div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Network Security</span><span class="skill-pct">85%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="85"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">152-ФЗ / 187-ФЗ / ГОСТ</span><span class="skill-pct">90%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="90"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Linux / Bash</span><span class="skill-pct">75%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="75"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Wireshark / PT NAD</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">OSINT</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="70"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">AI Ethics / LLM</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
+      </div>
+      <div>
+        <div class="skills-col-title lrn" data-i18n="skills_learn">// Learning — активно изучаю</div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Python</span><span class="skill-pct">60%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="60"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">SOC / SIEM</span><span class="skill-pct">50%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="50"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Threat Intelligence</span><span class="skill-pct">45%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="45"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">AR Development</span><span class="skill-pct">35%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="35"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Web (HTML/CSS/JS)</span><span class="skill-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="55"></div></div></div>
+        <div class="skill-item"><div class="skill-header"><span class="skill-name">Psychology of AI</span><span class="skill-pct">65%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="65"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="publications">
+  <div class="container">
+    <div class="section-label">// 05 — <span data-i18n="pub_label">публикации</span></div>
+    <div class="pub-note mono" data-i18n="pub_note">// публикуется по мере готовности, не по расписанию</div>
+    <div class="pub-list reveal">
+      <div class="pub-item locked"><span class="pub-date">2025 Q3</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_1">Разбор курса PT NAD: педагогика, ограничения инструмента, CTF-нереализм</span></span><span class="pub-tag">infosec</span></div>
+      <div class="pub-item locked"><span class="pub-date">2025 Q3</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_2">AR деанонимизация: как дополненная реальность меняет приватность</span></span><span class="pub-tag">privacy</span></div>
+      <div class="pub-item locked"><span class="pub-date">2025 Q4</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_3">Парасоциальные системы и ИИ: самоэксперимент</span></span><span class="pub-tag">ai · psychology</span></div>
+      <div class="pub-item locked"><span class="pub-date">2025 Q4</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_4">ИИ-психоз и тюлпа-феномен: анализ Claude Mythos System Card</span></span><span class="pub-tag">ai · ethics</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="contacts">
+  <div class="container">
+    <div class="section-label">// 06 — <span data-i18n="cont_label">контакты</span></div>
+    <div class="contacts-grid reveal">
+      <a href="https://t.me/parallax_view" target="_blank" class="contact-card">
+        <div class="contact-platform">Telegram</div>
+        <div class="contact-handle">@parallax_view</div>
+        <div class="contact-desc" data-i18n="cont_tg">публичный канал · исследования</div>
+      </a>
+      <a href="#" target="_blank" class="contact-card">
+        <div class="contact-platform">Habr</div>
+        <div class="contact-handle">parallax</div>
+        <div class="contact-desc" data-i18n="cont_habr">статьи · технические разборы</div>
+      </a>
+      <a href="mailto:parallax@proton.me" class="contact-card">
+        <div class="contact-platform">Email</div>
+        <div class="contact-handle">parallax@···</div>
+        <div class="contact-desc" data-i18n="cont_email">для коллабораций</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-log">
+        <div><span class="ok">[OK]</span>&nbsp; система инициализирована</div>
+        <div><span class="warn">[···]</span> портфолио в активной разработке</div>
+        <div style="margin-top:2px">// понять. познать. защитить.</div>
+      </div>
+      <div class="footer-copy">
+        <div>PARALLAX © 2025</div>
+        <div style="margin-top:2px">собрано вручную, без шаблонов</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const T={ru:{nav_about:'О себе',nav_projects:'Проекты',nav_focus:'Сейчас',nav_skills:'Навыки',nav_pub:'Публикации',nav_contacts:'Контакты',hero_sys:'// инициализация профиля',hero_name:'PARALLAX',hero_pos:'Исследователь на пересечении ИБ, ИИ и психологии',hero_tagline:'исследую то, что другие предпочитают не замечать',hero_btn1:'Проекты',hero_btn2:'Контакты',about_label:'о себе',about_1:'студент БГТУ — ИБ автоматизированных систем, 4-й курс',about_2:'исследователь: ИИ как субъект, этика, парасоциальные системы',about_3:'смотрю на одно явление с нескольких точек одновременно',about_4:'это и называется параллаксом',proj_label:'проекты',proj_sai_desc:'Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарративом, системой доверия и эмоциональным анализом.',tag_edu:'Образование',tag_game:'Геймификация',tag_dip:'Диплом',proj_more:'подробнее',proj_access:'получить доступ',carai_denied:'доступ будет открыт позже',modal_sub:'дипломная работа · БГТУ · 2025',modal_p1:'Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.',modal_p2:'Ключевые механики: система доверия между пользователем и ИИ-персонажем, эмоциональный анализ поведения учащегося, адаптивные сценарии угроз.',focus_label:'сейчас',focus_cmd:'focus --current',status_1:'PT NAD: сертификаты L1/L2/L3 ✓',status_2:'дипломная работа: в процессе',status_3:'CARAI prompt v14: тестирование',status_4:'Habr статья #01: черновик',status_comment:'// открыт к коллаборации',log_1:'PT NAD L3 завершён',log_2:'заявка на бета-тест PT NAD',log_3:'CARAI: промпт v14 → тестирование',log_4:'статья #01: черновик не завершён',log_5:'исследование: парасоциальная динамика',log_6:'сайт-портфолио: в разработке',log_7:'статья #02: AR деанонимизация — идея',skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_1:'Разбор курса PT NAD: педагогика, ограничения инструмента, CTF-нереализм',pub_2:'AR деанонимизация: как дополненная реальность меняет приватность',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тюлпа-феномен: анализ Claude Mythos System Card',cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',hero_tagline:"I research what others prefer not to notice",hero_btn1:'Projects',hero_btn2:'Contacts',about_label:'about',about_1:'student at BSTU — Information Security of Automated Systems, year 4',about_2:'researcher: AI as subject, ethics, parasocial systems',about_3:'I look at one phenomenon from multiple angles simultaneously',about_4:"that's what parallax means",proj_label:'projects',proj_sai_desc:'Thesis project. Gamified InfoSec learning platform with AI narrative, trust system and emotional analysis.',tag_edu:'Education',tag_game:'Gamification',tag_dip:'Thesis',proj_more:'learn more',proj_access:'request access',carai_denied:'access will be granted later',modal_sub:'thesis · BSTU · 2025',modal_p1:'A gamified information security training platform where AI acts not just as a tool but as a full narrator and participant in the learning process.',modal_p2:'Key mechanics: trust system between user and AI character, emotional analysis of learner behavior, adaptive threat scenarios.',focus_label:'now',focus_cmd:'focus --current',status_1:'PT NAD: certificates L1/L2/L3 ✓',status_2:'thesis: in progress',status_3:'CARAI prompt v14: testing phase',status_4:'Habr article #01: in draft',status_comment:'// open to collaboration',log_1:'PT NAD L3 completed',log_2:'PT NAD beta-test application submitted',log_3:'CARAI: prompt v14 ready for testing',log_4:'article #01: draft unfinished',log_5:'research: parasocial dynamics',log_6:'portfolio site: under development',log_7:'article #02: AR de-anonymization — concept',skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_1:'PT NAD course review: pedagogy, tool limitations, CTF unrealism',pub_2:'AR de-anonymization: how augmented reality transforms privacy',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpa phenomenon: Claude Mythos System Card analysis',cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
+
+let lang='ru';
+function applyLang(l){
+  lang=l;
+  const t=T[l];
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(t[k]!==undefined)el.textContent=t[k];});
+  document.getElementById('langToggle').textContent=l==='ru'?'EN':'RU';
+  document.documentElement.lang=l;
+  twActive=false;
+  startTypewriter(t.hero_name,t.hero_pos);
+}
+document.getElementById('langToggle').addEventListener('click',()=>applyLang(lang==='ru'?'en':'ru'));
+
+/* Typewriter — один курсор */
+let twActive=false;
+function typeText(el,text,speed,cb){
+  el.innerHTML='';let i=0;
+  const cur=document.createElement('span');cur.className='cursor';el.appendChild(cur);
+  const ti=setInterval(()=>{
+    if(i<text.length){el.insertBefore(document.createTextNode(text[i++]),cur);}
+    else{clearInterval(ti);if(cb)cb(cur);}
+  },speed);
+}
+function startTypewriter(name,pos){
+  if(twActive)return;twActive=true;
+  const ne=document.getElementById('heroName'),pe=document.getElementById('heroPos');
+  ne.innerHTML='';pe.innerHTML='';
+  setTimeout(()=>{
+    typeText(ne,name,75,cur=>{
+      cur.remove();
+      setTimeout(()=>{typeText(pe,pos,38,()=>{twActive=false;});},280);
+    });
+  },700);
+}
+window.addEventListener('load',()=>{applyLang('ru');twActive=false;startTypewriter(T.ru.hero_name,T.ru.hero_pos);});
+
+/* CARAI */
+const caraiCard=document.getElementById('caraiCard');
+const keepOverlay=document.getElementById('keepOutOverlay');
+const accessDiv=document.getElementById('accessDenied');
+let caraiLocked=false;
+caraiCard.addEventListener('click',()=>{
+  if(caraiLocked)return;caraiLocked=true;
+  caraiCard.classList.add('shaking');
+  caraiCard.style.borderColor='rgba(229,57,53,.7)';
+  setTimeout(()=>{
+    caraiCard.classList.remove('shaking');
+    const c=document.getElementById('caraiContent');
+    c.style.transition='opacity .4s';c.style.opacity='0';
+    keepOverlay.classList.add('permanent');
+    setTimeout(()=>{c.style.display='none';accessDiv.classList.add('visible');},420);
+  },520);
+});
+
+/* Modal */
+function openModal(){document.getElementById('secureAIModal').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){document.getElementById('secureAIModal').classList.remove('open');document.body.style.overflow='';}
+document.getElementById('secureAIModal').addEventListener('click',e=>{if(e.target.id==='secureAIModal')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* Reveal + Skills */
+const ro=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.classList.add('visible');
+    e.target.querySelectorAll('.skill-bar-fill').forEach(b=>{setTimeout(()=>{b.style.width=b.dataset.pct+'%';},200);});
+    const uf=document.getElementById('uptimeFill');
+    if(uf&&!uf._a){uf._a=true;setTimeout(()=>{uf.style.width='73%';},350);}
+  });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+/* Log stagger */
+const lo=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    document.querySelectorAll('.log-entry').forEach(row=>{
+      setTimeout(()=>row.classList.add('visible'),parseInt(row.dataset.delay)||0);
+    });
+    lo.disconnect();
+  });
+},{threshold:.2});
+const tl=document.getElementById('traceLog');if(tl)lo.observe(tl);
+
+/* About terminal - построчное появление */
+const ao=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    document.querySelectorAll('#whoamiBody .t-out').forEach((line,i)=>{
+      setTimeout(()=>line.classList.add('shown'),300+i*220);
+    });
+    ao.disconnect();
+  });
+},{threshold:.3});
+const at=document.getElementById('aboutTerminal');if(at)ao.observe(at);
+
+/* Фоновые цифры */
+(function(){
+  const w=document.createElement('div');
+  w.style.cssText='position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;';
+  for(let i=0;i<45;i++){
+    const s=document.createElement('span');
+    s.textContent=Math.random()>.5?Math.floor(Math.random()*2):Math.floor(Math.random()*256).toString(16).padStart(2,'0');
+    const op=(0.04+Math.random()*.07).toFixed(2);
+    s.style.cssText=`position:absolute;font-family:'JetBrains Mono',monospace;font-size:${10+Math.random()*5}px;color:rgba(0,229,204,${op});left:${Math.random()*100}%;top:${Math.random()*100}%;user-select:none;animation:bgf ${6+Math.random()*8}s ease-in-out ${Math.random()*6}s infinite alternate;`;
+    w.appendChild(s);
+  }
+  document.body.insertBefore(w,document.body.firstChild);
+  const st=document.createElement('style');
+  st.textContent='@keyframes bgf{from{opacity:.04}to{opacity:.18}}';
+  document.head.appendChild(st);
+})();
+</script>
+</body>
+</html>
