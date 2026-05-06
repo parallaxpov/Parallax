@@ -487,7 +487,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   <div class="container">
     <div class="section-label">// 03 — <span data-i18n="focus_label">сейчас</span></div>
     <div class="focus-grid">
-      <div class="terminal-window reveal">
+      <div class="terminal-window reveal" id="statusTerminal">
         <div class="terminal-titlebar">
           <span class="terminal-title">CURRENT_STATUS</span>
           <div class="terminal-controls"><span></span><span></span><span></span></div>
@@ -702,6 +702,18 @@ const ao=new IntersectionObserver(entries=>{
   });
 },{threshold:.3});
 const at=document.getElementById('aboutTerminal');if(at)ao.observe(at);
+
+/* Status terminal - построчное появление */
+const so=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.t-out').forEach((line,i)=>{
+      setTimeout(()=>line.classList.add('shown'),200+i*160);
+    });
+    so.disconnect();
+  });
+},{threshold:.25});
+const st=document.getElementById('statusTerminal');if(st)so.observe(st);
 
 /* ── CHROMA TEAR ─────────────────────── */
 (function(){
