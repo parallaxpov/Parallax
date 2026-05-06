@@ -248,6 +248,28 @@ footer{border-top:var(--bd);padding:36px 0}
 .footer-log .ok{color:#22c55e}.footer-log .warn{color:#f59e0b}
 .footer-copy{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-align:right;line-height:2}
 
+/* ── FX TOGGLE BUTTON ────────────────── */
+.fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
+.fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
+.fx-toggle.fx-is-off{border-color:rgba(229,57,53,.35);color:rgba(229,57,53,.5)}
+.fx-toggle.fx-is-off:hover{border-color:var(--red);color:var(--red);box-shadow:0 0 12px rgba(229,57,53,.2)}
+
+/* ── FX OFF STATE ────────────────────── */
+body.fx-off::before{opacity:0!important}
+body.fx-off::after{opacity:0!important}
+body.fx-off .vignette{opacity:0!important}
+body.fx-off .vignette::after{animation:none!important}
+body.fx-off .bg-glow{opacity:0!important}
+body.fx-off #bgNumbers{opacity:0!important}
+body.fx-off .interference-canvas{opacity:0!important}
+body.fx-off .la-scan{opacity:0!important}
+body.fx-off .la-frame{animation:none!important;border-color:rgba(0,229,204,.35)!important}
+body.fx-off .la-circle{animation:none!important}
+body.fx-off .la-hex{animation:none!important;filter:drop-shadow(0 0 8px rgba(0,229,204,.35))!important}
+body.fx-off .hero-logo-anim{animation:none!important;transform:none!important}
+body.fx-off .section-label{animation:none!important}
+body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off .contact-card::before{opacity:0!important}
+
 /* REVEAL */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
@@ -300,6 +322,7 @@ footer{border-top:var(--bd);padding:36px 0}
       <li><a href="#publications" data-i18n="nav_pub">Публикации</a></li>
       <li><a href="#contacts"     data-i18n="nav_contacts">Контакты</a></li>
     </ul>
+    <button class="fx-toggle" id="fxToggle">FX ON</button>
     <button class="lang-toggle" id="langToggle">EN</button>
   </div>
 </nav>
@@ -684,6 +707,7 @@ const at=document.getElementById('aboutTerminal');if(at)ao.observe(at);
 (function(){
   const tear=document.getElementById('fxTear');
   function fireTear(){
+    if(document.body.classList.contains('fx-off'))return;
     const x=25+Math.random()*15;
     const line=document.createElement('div');
     line.style.cssText='position:absolute;right:'+x+'%;top:0;width:1px;height:100%;background:linear-gradient(to bottom,transparent,rgba(0,229,204,.75) 25%,rgba(229,57,53,.6) 50%,rgba(0,229,204,.75) 75%,transparent);filter:blur(.5px);opacity:1';
@@ -716,23 +740,45 @@ const at=document.getElementById('aboutTerminal');if(at)ao.observe(at);
   let lines=[];
   function draw(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    lines=lines.filter(l=>l.age<l.life);
-    lines.forEach(l=>{
-      const p=l.age/l.life;
-      const op=l.op*Math.sin(Math.PI*p);
-      ctx.fillStyle=l.col+op+')';
-      ctx.fillRect(0,l.y,cv.width,l.w);
-      l.age++;
-    });
-    if(Math.random()<.022)lines.push({y:Math.random()*cv.height,op:.1+Math.random()*.13,life:50+Math.random()*90,age:0,w:.5+Math.random()*1.5,col:Math.random()>.65?'rgba(0,229,204,':'rgba(229,57,53,'});
+    if(!document.body.classList.contains('fx-off')){
+      lines=lines.filter(l=>l.age<l.life);
+      lines.forEach(l=>{
+        const p=l.age/l.life;
+        const op=l.op*Math.sin(Math.PI*p);
+        ctx.fillStyle=l.col+op+')';
+        ctx.fillRect(0,l.y,cv.width,l.w);
+        l.age++;
+      });
+      if(Math.random()<.022)lines.push({y:Math.random()*cv.height,op:.1+Math.random()*.13,life:50+Math.random()*90,age:0,w:.5+Math.random()*1.5,col:Math.random()>.65?'rgba(0,229,204,':'rgba(229,57,53,'});
+    }
     requestAnimationFrame(draw);
   }
   draw();
 })();
 
+/* ── FX TOGGLE ───────────────────────── */
+(function(){
+  const btn=document.getElementById('fxToggle');
+  let on=localStorage.getItem('prx-fx')!=='off';
+  function apply(){
+    if(on){
+      document.body.classList.remove('fx-off');
+      btn.textContent='FX ON';
+      btn.classList.remove('fx-is-off');
+    } else {
+      document.body.classList.add('fx-off');
+      btn.textContent='FX OFF';
+      btn.classList.add('fx-is-off');
+    }
+  }
+  btn.addEventListener('click',()=>{on=!on;localStorage.setItem('prx-fx',on?'on':'off');apply();});
+  apply();
+})();
+
 /* Фоновые цифры */
 (function(){
   const w=document.createElement('div');
+  w.id='bgNumbers';
   w.style.cssText='position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;';
   for(let i=0;i<45;i++){
     const s=document.createElement('span');
