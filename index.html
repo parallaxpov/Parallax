@@ -59,9 +59,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;display:flex;ali
 nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,204,.22),transparent)}
 .nav-inner{width:100%;max-width:1120px;margin:0 auto;padding:0 44px;display:flex;align-items:center;justify-content:space-between}
 .nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.22em;text-decoration:none;display:flex;align-items:center;gap:10px}
-.logo-icon{width:20px;height:20px;position:relative;flex-shrink:0}
-.logo-icon .sq1{position:absolute;width:13px;height:13px;border:1.5px solid var(--cyan);top:0;left:0}
-.logo-icon .sq2{position:absolute;width:13px;height:13px;border:1.5px solid var(--red);bottom:0;right:0}
+.logo-icon{width:22px;height:22px;position:relative;flex-shrink:0}
+.logo-icon .li-hex{position:absolute;width:15px;height:15px;top:0;left:0;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--cyan);opacity:.8}
+.logo-icon .li-circ{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--red);opacity:.8;bottom:0;right:0}
 .nav-links{display:flex;align-items:center;gap:28px;list-style:none}
 .nav-links a{font-family:var(--mono);font-size:12px;color:var(--text-mid);text-decoration:none;letter-spacing:.1em;transition:color .2s}
 .nav-links a:hover{color:var(--cyan)}
@@ -111,7 +111,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 @keyframes laCircleGlow{0%,100%{box-shadow:0 0 18px rgba(229,57,53,.28)}50%{box-shadow:0 0 36px rgba(229,57,53,.62)}}
 @keyframes laCircleGlitch{0%,84%,100%{transform:none;filter:none}85%{transform:translateX(-5px);filter:drop-shadow(7px 0 rgba(0,229,204,.7))}85.6%{transform:none;filter:none}87%{transform:translateX(4px);filter:drop-shadow(-5px 0 rgba(0,229,204,.55))}87.6%{transform:none;filter:none}}
 /* Cyan hex — horizontal line hatching */
-.la-hex{position:absolute;width:54%;height:54%;left:2%;top:40%;clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);background:repeating-linear-gradient(0deg,rgba(0,229,204,.9) 0px,rgba(0,229,204,.9) 1.5px,rgba(0,14,12,.74) 1.5px,rgba(0,14,12,.74) 6px);animation:laHexGlow 3s ease-in-out infinite .7s,laHexGlitch 11s infinite}
+.la-hex{position:absolute;width:54%;height:54%;left:4%;top:34%;clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);background:repeating-linear-gradient(0deg,rgba(0,229,204,.9) 0px,rgba(0,229,204,.9) 1.5px,rgba(0,14,12,.74) 1.5px,rgba(0,14,12,.74) 6px);animation:laHexGlow 3s ease-in-out infinite .7s,laHexGlitch 11s infinite}
 @keyframes laHexGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(0,229,204,.42))}50%{filter:drop-shadow(0 0 20px rgba(0,229,204,.72))}}
 @keyframes laHexGlitch{
   0%,84%,100%{clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);transform:none;filter:drop-shadow(0 0 8px rgba(0,229,204,.42))}
@@ -147,8 +147,10 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 
 /* PROJECTS */
 #projects{padding:100px 0;border-top:var(--bd)}
-.projects-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.project-card{position:relative;padding:22px;background:var(--bg2);transition:all .3s;cursor:pointer;overflow:hidden}
+.projects-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:20px;padding-bottom:14px;-webkit-overflow-scrolling:touch}
+.projects-grid::-webkit-scrollbar{height:3px}
+.projects-grid::-webkit-scrollbar-thumb{background:rgba(0,229,204,.2);border-radius:2px}
+.project-card{position:relative;padding:22px;background:var(--bg2);transition:all .3s;cursor:pointer;overflow:hidden;scroll-snap-align:start;flex:0 0 calc(50% - 10px);min-width:280px}
 .project-card.cyan-card{border:var(--bc)}.project-card.cyan-card:hover{border-color:rgba(0,229,204,.4);box-shadow:var(--gc);transform:translateY(-2px)}
 .project-card.red-card{border:var(--br)}
 .project-hex{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:9px}
@@ -215,7 +217,6 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
 .skills-col-title{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:22px;padding-bottom:10px;border-bottom:var(--bd)}
 .skills-col-title.conf{color:var(--cyan)}.skills-col-title.lrn{color:var(--purple)}
-.skill-item{margin-bottom:14px}
 .skill-header{display:flex;justify-content:space-between;margin-bottom:5px}
 .skill-name{font-family:var(--mono);font-size:13px;color:var(--text)}.skill-pct{font-family:var(--mono);font-size:12px;color:var(--text-dim)}
 .skill-bar-track{height:2px;background:rgba(255,255,255,.05);overflow:hidden}
@@ -301,6 +302,12 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
 
 /* ── 5. INTERFERENCE CANVAS ──────────────── */
 .interference-canvas{position:fixed;inset:0;pointer-events:none;z-index:996;width:100%;height:100%}
+
+/* ── SKILL TOOLTIPS ─────────────────────── */
+.skill-item{position:relative;margin-bottom:14px}
+.skill-item[data-tooltip]::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:0;font-family:var(--mono);font-size:11px;line-height:1.5;padding:7px 10px;background:var(--bg2);border:var(--bc);color:var(--text);max-width:280px;white-space:normal;pointer-events:none;opacity:0;transition:opacity .2s;z-index:20}
+.lrn-col .skill-item[data-tooltip]::after{border:var(--br)}
+.skill-item[data-tooltip]:hover::after{opacity:1}
 </style>
 </head>
 <body>
@@ -312,7 +319,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
 <nav>
   <div class="nav-inner">
     <a href="#hero" class="nav-logo">
-      <div class="logo-icon"><div class="sq1"></div><div class="sq2"></div></div>PARALLAX
+      <div class="logo-icon"><div class="li-hex"></div><div class="li-circ"></div></div>PARALLAX
     </a>
     <ul class="nav-links">
       <li><a href="#about"        data-i18n="nav_about">О себе</a></li>
@@ -391,27 +398,24 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <div class="about-sysinfo reveal" style="transition-delay:.15s">
         <div class="sysinfo-card">
           <div class="si-label">// system.info</div>
-          <div class="si-row"><span class="si-key">role</span><span class="si-val c">security researcher</span></div>
+          <div class="si-row"><span class="si-key">alias</span><span class="si-val c">parallax</span></div>
+          <div class="si-row"><span class="si-key">role</span><span class="si-val c">InfoSec · AI Safety</span></div>
           <div class="si-row"><span class="si-key">location</span><span class="si-val">RU</span></div>
           <div class="si-row"><span class="si-key">year</span><span class="si-val">4 / 5.5</span></div>
-          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">InfoSec × AI × Psychology × Dev</span></div>
+          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">human × AI security systems</span></div>
           <div class="si-row"><span class="si-key">status</span><span class="si-val" style="color:#22c55e">online</span></div>
         </div>
         <div class="sysinfo-card">
-          <div class="si-label">// target.acquisition</div>
+          <div class="si-label">// current direction</div>
           <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val c">Positive Technologies</span></div>
-          <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val">BI.ZONE</span></div>
-          <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val">Sber</span></div>
-          <div class="si-row"><span class="si-key">research</span><span class="si-val p" data-i18n="si_open">открыт к предложениям</span></div>
-          <div class="uptime-bar"><div class="uptime-fill" id="uptimeFill"></div></div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:5px">career_progress: 73%</div>
+          <div class="si-row"><span class="si-key">research</span><span class="si-val p">AI × Security intersection</span></div>
         </div>
         <div class="sysinfo-card">
           <div class="si-label">// certifications</div>
-          <div class="si-row"><span class="si-key">PT NAD L1</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
-          <div class="si-row"><span class="si-key">PT NAD L2</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
-          <div class="si-row"><span class="si-key">PT NAD L3</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
-          <div class="si-row"><span class="si-key">certificate</span><span class="si-val" style="color:#f59e0b">[PENDING]</span></div>
+          <div class="si-row"><span class="si-key">PT NAD</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row"><span class="si-key">PT MaxPatrol SIEM</span><span class="si-val" style="color:#f59e0b">[IN PROGRESS]</span></div>
+          <div class="si-row"><span class="si-key">BlueDot: Future of AI</span><span class="si-val" style="color:var(--text-dim)">[PENDING]</span></div>
+          <div class="si-row"><span class="si-key">BlueDot: AGI Strategy</span><span class="si-val" style="color:var(--text-dim)">[PENDING]</span></div>
         </div>
       </div>
     </div>
@@ -426,7 +430,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         <div class="corner tl"></div><div class="corner br"></div>
         <div class="project-hex">0x01</div>
         <div class="project-name c">SecureAI</div>
-        <div class="project-desc" data-i18n="proj_sai_desc">Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарративом, системой доверия и эмоциональным анализом.</div>
+        <div class="project-desc" data-i18n="proj_sai_desc">Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарратором. Стек: React/TypeScript/Vite, Node.js, Gemini API. Системы: доверие 0–100, эмоц. состояния, память. MVP ~70%.</div>
         <div class="project-tags">
           <span class="tag c" data-i18n="tag_edu">Образование</span>
           <span class="tag c">AI</span>
@@ -456,6 +460,26 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
           </div>
           <div class="project-action r" data-i18n="proj_access">получить доступ</div>
         </div>
+      <div class="project-card cyan-card reveal" style="transition-delay:.2s">
+        <div class="corner tl"></div><div class="corner br"></div>
+        <div class="project-hex">0x03</div>
+        <div class="project-name c">Cognitive Phishing Inoculation</div>
+        <div class="project-desc" data-i18n="proj_03_desc">Методика и браузерный инструмент для обучения пользователей распознаванию фишинга через когнитивную нагрузку, а не фильтрацию.</div>
+        <div class="project-tags">
+          <span class="tag c">CONCEPT</span>
+          <span class="tag c">RESEARCH</span>
+        </div>
+        <div class="project-action c" data-i18n="proj_more">подробнее</div>
+      </div>
+      <div class="project-card cyan-card reveal" style="transition-delay:.3s">
+        <div class="corner tl"></div><div class="corner br"></div>
+        <div class="project-hex">0x04</div>
+        <div class="project-name c">AR Legal Assistant</div>
+        <div class="project-desc" data-i18n="proj_04_desc">AI-ассистент для умных очков, специализированный на российском законодательстве. Рыночных аналогов нет.</div>
+        <div class="project-tags">
+          <span class="tag c">CONCEPT</span>
+        </div>
+        <div class="project-action c" data-i18n="proj_more">подробнее</div>
       </div>
     </div>
   </div>
@@ -471,13 +495,13 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <h3>SecureAI</h3>
       <div class="modal-sub" data-i18n="modal_sub">дипломная работа · БГТУ · 2025</div>
       <p data-i18n="modal_p1">Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.</p>
-      <p data-i18n="modal_p2">Ключевые механики: система доверия между пользователем и ИИ-персонажем, эмоциональный анализ поведения учащегося, адаптивные сценарии угроз.</p>
+      <p data-i18n="modal_p2">Стек: React/TypeScript/Vite, Node.js, Gemini API. Системы: доверие 0–100, эмоциональные состояния ИИ-персонажа, долгосрочная память. Статус: MVP ~70%.</p>
       <div class="modal-tags">
         <span class="tag c" data-i18n="tag_edu">Образование</span>
-        <span class="tag c">AI Narrative</span>
+        <span class="tag c">React · TypeScript</span>
+        <span class="tag c">Gemini API</span>
         <span class="tag c" data-i18n="tag_game">Геймификация</span>
-        <span class="tag c">Python</span>
-        <span class="tag c">InfoSec</span>
+        <span class="tag c" data-i18n="tag_dip">Диплом</span>
       </div>
     </div>
   </div>
@@ -495,8 +519,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         <div class="terminal-body" style="font-size:12px">
           <div><span class="t-prompt">$</span> <span class="t-cmd" data-i18n="focus_cmd">focus --current</span></div>
           <span class="t-gap"></span>
-          <div class="t-out" data-i18n="status_5">написание статей Хабр и Medium</div>
-          <div class="t-out" data-i18n="status_6">подача заявок на стажировку</div>
+          <div class="t-out" data-i18n="status_5">курс PT MaxPatrol SIEM</div>
+          <div class="t-out" data-i18n="status_6">практика RAD COP (июнь–июль)</div>
           <span class="t-gap"></span>
           <div class="t-comment" data-i18n="status_comment">// открыт к коллаборации</div>
           <span class="t-gap"></span>
@@ -509,15 +533,12 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
           <div class="terminal-controls"><span></span><span></span><span></span></div>
         </div>
         <div class="trace-log-body" id="traceLog">
-          <div class="log-entry" data-delay="0"><span class="log-time">2026-03-13</span><span class="log-level warn">[WARN]</span><span class="log-msg hi" data-i18n="log_1">начало эксперимента...</span></div>
-          <div class="log-entry" data-delay="100"><span class="log-time">2026-03-29</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_2">начало курса PT NAD</span></div>
-          <div class="log-entry" data-delay="200"><span class="log-time">2026-04-13</span><span class="log-level pend">[···]</span><span class="log-msg" data-i18n="log_3">концепт проекта CARAI</span></div>
-          <div class="log-entry" data-delay="300"><span class="log-time">2026-04-18</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_4">анализ безопасности проекта SecureAI</span></div>
-          <div class="log-entry" data-delay="400"><span class="log-time">2026-04-26</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_5">концепт серии 4-х статей</span></div>
-          <div class="log-entry" data-delay="500"><span class="log-time">2026-04-28</span><span class="log-level warn">[WARN]</span><span class="log-msg" data-i18n="log_6">статья #01: черновик не завершён</span></div>
-          <div class="log-entry" data-delay="600"><span class="log-time">2026-04-31</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_7">курс PT NAD завершён</span></div>
-          <div class="log-entry" data-delay="700"><span class="log-time">2026-05-03</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_8">заявка на бета-тест PT NAD</span></div>
-          <div class="log-entry" data-delay="800"><span class="log-time">2026-05-04</span><span class="log-level pend">[···]</span><span class="log-msg" data-i18n="log_9">сайт-портфолио: в разработке</span></div>
+          <div class="log-entry" data-delay="0"><span class="log-time">2026-03</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_6">CARAI prompt v14 — активная разработка</span></div>
+          <div class="log-entry" data-delay="100"><span class="log-time">2026-05</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_5">серия статей Habr — на доработке</span></div>
+          <div class="log-entry" data-delay="200"><span class="log-time">2026-05</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_4">Cognitive Phishing — концепт и исследование финализированы</span></div>
+          <div class="log-entry" data-delay="300"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_3">PT MaxPatrol SIEM — курс в процессе</span></div>
+          <div class="log-entry" data-delay="400"><span class="log-time">2026-06</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_2">PT NAD — все кейсы завершены</span></div>
+          <div class="log-entry" data-delay="500"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_1">RAD COP практика — старт в конце июня</span></div>
         </div>
       </div>
     </div>
@@ -528,23 +549,22 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   <div class="container">
     <div class="section-label">// 04 — <span data-i18n="skills_label">навыки</span></div>
     <div class="skills-grid reveal">
-      <div>
+      <div class="conf-col">
         <div class="skills-col-title conf" data-i18n="skills_conf">// Confident — освоено</div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Network Security</span><span class="skill-pct">85%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="85"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">152-ФЗ / 187-ФЗ / ГОСТ</span><span class="skill-pct">90%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="90"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Linux / Bash</span><span class="skill-pct">75%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="75"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Wireshark / PT NAD</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">OSINT</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="70"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">AI Ethics / LLM</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
+        <div class="skill-item" data-tooltip="PT NAD — анализ реальных инцидентов, детектирование аномалий"><div class="skill-header"><span class="skill-name">Network Traffic Analysis</span><span class="skill-pct">82%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="82"></div></div></div>
+        <div class="skill-item" data-tooltip="КИИ, ПДн, ГОСТ Р 57580 — включая банковский сектор (RAD COP)"><div class="skill-header"><span class="skill-name">Regulatory Compliance</span><span class="skill-pct">85%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="85"></div></div></div>
+        <div class="skill-item" data-tooltip="рабочий документ аудитора, проверка соответствия ГОСТ Р 57580"><div class="skill-header"><span class="skill-name">Compliance Audit</span><span class="skill-pct">78%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="78"></div></div></div>
+        <div class="skill-item" data-tooltip="системный дизайн промптов, архитектура AI-персонажей"><div class="skill-header"><span class="skill-name">AI Prompt Engineering</span><span class="skill-pct">88%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="88"></div></div></div>
+        <div class="skill-item" data-tooltip="академические работы, технические разборы, Habr"><div class="skill-header"><span class="skill-name">Technical Writing</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
+        <div class="skill-item" data-tooltip="Astra Linux, Рубикон Nova, MaxPatrol SIEM, Сканер-ВС"><div class="skill-header"><span class="skill-name">Certified Security Tools</span><span class="skill-pct">75%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="75"></div></div></div>
       </div>
-      <div>
+      <div class="lrn-col">
         <div class="skills-col-title lrn" data-i18n="skills_learn">// Learning — активно изучаю</div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Python</span><span class="skill-pct">60%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="60"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">SOC / SIEM</span><span class="skill-pct">50%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="50"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Threat Intelligence</span><span class="skill-pct">45%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="45"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">AR Development</span><span class="skill-pct">35%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="35"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Web (HTML/CSS/JS)</span><span class="skill-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="55"></div></div></div>
-        <div class="skill-item"><div class="skill-header"><span class="skill-name">Psychology of AI</span><span class="skill-pct">65%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="65"></div></div></div>
+        <div class="skill-item" data-tooltip="курс Positive Technologies — студент-тестировщик, июнь 2026"><div class="skill-header"><span class="skill-name">MaxPatrol SIEM</span><span class="skill-pct">35%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="35"></div></div></div>
+        <div class="skill-item" data-tooltip="LLM-assisted разработка, архитектура AI-продуктов (SecureAI)"><div class="skill-header"><span class="skill-name">AI Engineering</span><span class="skill-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="55"></div></div></div>
+        <div class="skill-item" data-tooltip="фишинг и когнитивные механики — исследование и защита"><div class="skill-header"><span class="skill-name">Cognitive Security Research</span><span class="skill-pct">60%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="60"></div></div></div>
+        <div class="skill-item" data-tooltip="сетевая разведка — курсы PT NAD и лабораторные работы"><div class="skill-header"><span class="skill-name">Wireshark · nmap · subfinder · httpx</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="70"></div></div></div>
+        <div class="skill-item" data-tooltip="профессиональное чтение и письмо уверенно, разговорная практика развивается"><div class="skill-header"><span class="skill-name">English B2</span><span class="skill-pct">65%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="65"></div></div></div>
       </div>
     </div>
   </div>
@@ -602,7 +622,39 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
 </footer>
 
 <script>
-const T={ru:{nav_about:'О себе',nav_projects:'Проекты',nav_focus:'Сейчас',nav_skills:'Навыки',nav_pub:'Публикации',nav_contacts:'Контакты',hero_sys:'// инициализация профиля',hero_name:'PARALLAX',hero_pos:'Исследователь на пересечении ИБ, ИИ и психологии',hero_tagline:'исследую то, что другие предпочитают не замечать',hero_btn1:'Проекты',hero_btn2:'Контакты',about_label:'о себе',about_1:'студент ИБ автоматизированных систем, 4-й курс',about_2:'исследователь ИИ как субъекта, ИБ как инструмента, этики как системы',about_3:'смотрю на одно явление с нескольких точек одновременно',about_4:'это и называется параллаксом',proj_label:'проекты',proj_sai_desc:'Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарративом, системой доверия и эмоциональным анализом.',tag_edu:'Образование',tag_game:'Геймификация',tag_dip:'Диплом',proj_more:'подробнее',proj_access:'получить доступ',carai_denied:'доступ будет открыт позже',modal_sub:'дипломная работа · 2025–2027',modal_p1:'Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.',modal_p2:'Ключевые механики: система доверия между пользователем и ИИ-персонажем, эмоциональный анализ поведения учащегося, адаптивные сценарии угроз.',focus_label:'сейчас',focus_cmd:'focus --current',status_1:'PT NAD: сертификаты L1/L2/L3 ✓',status_2:'дипломная работа: в процессе',status_3:'CARAI prompt v14: тестирование',status_4:'Habr статья #01: черновик',status_5:'написание статей Хабр и Medium',status_6:'подача заявок на стажировку',status_comment:'// открыт к коллаборации',log_1:'начало эксперимента...',log_2:'начало курса PT NAD',log_3:'концепт проекта CARAI',log_4:'анализ безопасности проекта SecureAI',log_5:'концепт серии 4-х статей',log_6:'статья #01: черновик не завершён',log_7:'курс PT NAD завершён',log_8:'заявка на бета-тест PT NAD',log_9:'сайт-портфолио: в разработке',skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',hero_tagline:"I research what others prefer not to notice",hero_btn1:'Projects',hero_btn2:'Contacts',about_label:'about',about_1:'student of Information Security of Automated Systems, year 4',about_2:'researcher: AI as subject, InfoSec as tool, ethics as system',about_3:'I look at one phenomenon from multiple angles simultaneously',about_4:"that's what parallax means",proj_label:'projects',proj_sai_desc:'Thesis project. Gamified InfoSec learning platform with AI narrative, trust system and emotional analysis.',tag_edu:'Education',tag_game:'Gamification',tag_dip:'Thesis',proj_more:'learn more',proj_access:'request access',carai_denied:'access will be granted later',modal_sub:'thesis · 2025–2027',modal_p1:'A gamified information security training platform where AI acts not just as a tool but as a full narrator and participant in the learning process.',modal_p2:'Key mechanics: trust system between user and AI character, emotional analysis of learner behavior, adaptive threat scenarios.',focus_label:'now',focus_cmd:'focus --current',status_1:'PT NAD: certificates L1/L2/L3 ✓',status_2:'thesis: in progress',status_3:'CARAI prompt v14: testing phase',status_4:'Habr article #01: in draft',status_5:'writing articles for Habr & Medium',status_6:'applying for internships',status_comment:'// open to collaboration',log_1:'experiment started...',log_2:'PT NAD course started',log_3:'CARAI project concept',log_4:'SecureAI security analysis',log_5:'4-article series concept',log_6:'article #01: draft unfinished',log_7:'PT NAD course completed',log_8:'PT NAD beta-test application submitted',log_9:'portfolio site: under development',skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_1:'Mythos won\'t hack your system. It just really wants to help',pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
+const T={
+ru:{nav_about:'О себе',nav_projects:'Проекты',nav_focus:'Сейчас',nav_skills:'Навыки',nav_pub:'Публикации',nav_contacts:'Контакты',
+hero_sys:'// инициализация профиля',hero_name:'PARALLAX',hero_pos:'Исследователь на пересечении ИБ, ИИ и психологии',
+hero_tagline:'исследую то, что другие предпочитают не замечать',hero_btn1:'Проекты',hero_btn2:'Контакты',
+about_label:'о себе',about_1:'студент ИБ автоматизированных систем, 4-й курс',about_2:'исследователь ИИ как субъекта, ИБ как инструмента, этики как системы',about_3:'смотрю на одно явление с нескольких точек одновременно',about_4:'это и называется параллаксом',
+proj_label:'проекты',
+proj_sai_desc:'Дипломная работа. Геймифицированная платформа обучения ИБ с ИИ-нарратором. Стек: React/TypeScript/Vite, Node.js, Gemini API. Системы: доверие 0–100, эмоц. состояния, память. MVP ~70%.',
+proj_03_desc:'Методика и браузерный инструмент для обучения пользователей распознаванию фишинга через когнитивную нагрузку, а не фильтрацию.',
+proj_04_desc:'AI-ассистент для умных очков, специализированный на российском законодательстве. Рыночных аналогов нет.',
+tag_edu:'Образование',tag_game:'Геймификация',tag_dip:'Диплом',proj_more:'подробнее',proj_access:'получить доступ',carai_denied:'доступ будет открыт позже',
+modal_sub:'дипломная работа · 2025–2027',modal_p1:'Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.',modal_p2:'Стек: React/TypeScript/Vite, Node.js, Gemini API. Системы: доверие 0–100, эмоциональные состояния ИИ-персонажа, долгосрочная память. Статус: MVP ~70%.',
+focus_label:'сейчас',focus_cmd:'focus --current',
+status_5:'курс PT MaxPatrol SIEM',status_6:'практика RAD COP (июнь–июль)',status_comment:'// открыт к коллаборации',
+log_1:'RAD COP практика — старт в конце июня',log_2:'PT NAD — все кейсы завершены',log_3:'PT MaxPatrol SIEM — курс в процессе',log_4:'Cognitive Phishing — концепт и исследование финализированы',log_5:'серия статей Habr — на доработке',log_6:'CARAI prompt v14 — активная разработка',
+skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',
+pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
+cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},
+en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',
+hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',
+hero_tagline:"I research what others prefer not to notice",hero_btn1:'Projects',hero_btn2:'Contacts',
+about_label:'about',about_1:'student of Information Security of Automated Systems, year 4',about_2:'researcher: AI as subject, InfoSec as tool, ethics as system',about_3:'I look at one phenomenon from multiple angles simultaneously',about_4:"that's what parallax means",
+proj_label:'projects',
+proj_sai_desc:'Thesis project. Gamified InfoSec learning platform with AI narrator. Stack: React/TypeScript/Vite, Node.js, Gemini API. Systems: trust 0–100, emotional states, memory. MVP ~70%.',
+proj_03_desc:'Methodology and browser tool for training users to recognize phishing through cognitive load, not filtering.',
+proj_04_desc:'AI assistant for smart glasses, specialized in Russian law. No market analogues exist.',
+tag_edu:'Education',tag_game:'Gamification',tag_dip:'Thesis',proj_more:'learn more',proj_access:'request access',carai_denied:'access will be granted later',
+modal_sub:'thesis · 2025–2027',modal_p1:'A gamified information security training platform where AI acts not just as a tool but as a full narrator and participant in the learning process.',modal_p2:'Stack: React/TypeScript/Vite, Node.js, Gemini API. Systems: trust 0–100, AI character emotional states, long-term memory. Status: MVP ~70%.',
+focus_label:'now',focus_cmd:'focus --current',
+status_5:'PT MaxPatrol SIEM course',status_6:'RAD COP practice (June–July)',status_comment:'// open to collaboration',
+log_1:'RAD COP practice — starting end of June',log_2:'PT NAD — all cases completed',log_3:'PT MaxPatrol SIEM — course in progress',log_4:'Cognitive phishing inoculation — concept & research finalized',log_5:'Habr article series — in revision',log_6:'CARAI prompt v14 — active development',
+skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',
+pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
+cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
 
 let lang='ru';
 function applyLang(l){
