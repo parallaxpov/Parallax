@@ -163,6 +163,13 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .project-action{font-family:var(--mono);font-size:13px;letter-spacing:.1em;display:flex;align-items:center;gap:6px;transition:gap .2s}
 .project-action::after{content:'→'}.project-action.c{color:var(--cyan)}.project-action.r{color:var(--red)}
 .project-card:hover .project-action{gap:10px}
+.projects-nav-wrap{position:relative}
+.proj-nav-btn{position:absolute;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:64px;background:var(--bg2);border:1px solid rgba(0,229,204,.35);color:var(--cyan);font-family:var(--mono);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0;outline:none;line-height:1}
+.proj-nav-btn:hover{border-color:var(--cyan);box-shadow:0 0 18px rgba(0,229,204,.25);background:rgba(0,229,204,.07)}
+.proj-nav-btn:active{transform:translateY(-50%) scale(.94)}
+.proj-nav-btn.left{left:-46px}
+.proj-nav-btn.right{right:-46px}
+.proj-nav-btn.disabled{opacity:.18;pointer-events:none}
 
 /* CARAI encrypted */
 .carai-encrypted{font-family:var(--mono);font-size:11px;color:rgba(229,57,53,.32);line-height:1.9;margin-bottom:16px;letter-spacing:.04em;user-select:none}
@@ -425,6 +432,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
 <section id="projects">
   <div class="container">
     <div class="section-label">// 02 — <span data-i18n="proj_label">проекты</span></div>
+    <div class="projects-nav-wrap">
+    <button class="proj-nav-btn left disabled" id="projNavLeft" aria-label="Предыдущий проект">◀</button>
     <div class="projects-grid">
       <div class="project-card cyan-card reveal" onclick="openModal()">
         <div class="corner tl"></div><div class="corner br"></div>
@@ -482,6 +491,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         </div>
         <div class="project-action c" data-i18n="proj_more">подробнее</div>
       </div>
+    </div>
+    <button class="proj-nav-btn right" id="projNavRight" aria-label="Следующий проект">▶</button>
     </div>
   </div>
 </section>
@@ -852,6 +863,26 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   const st=document.createElement('style');
   st.textContent='@keyframes bgf{from{opacity:.04}to{opacity:.18}}';
   document.head.appendChild(st);
+})();
+
+/* Projects nav arrows */
+(function(){
+  const grid=document.querySelector('.projects-grid');
+  const btnL=document.getElementById('projNavLeft');
+  const btnR=document.getElementById('projNavRight');
+  function upd(){
+    btnL.classList.toggle('disabled',grid.scrollLeft<=1);
+    btnR.classList.toggle('disabled',grid.scrollLeft>=grid.scrollWidth-grid.clientWidth-1);
+  }
+  function scrollByCard(dir){
+    const card=grid.querySelector('.project-card');
+    grid.scrollBy({left:dir*(card.offsetWidth+20),behavior:'smooth'});
+  }
+  btnL.addEventListener('click',()=>scrollByCard(-1));
+  btnR.addEventListener('click',()=>scrollByCard(1));
+  grid.addEventListener('scroll',upd,{passive:true});
+  window.addEventListener('resize',upd);
+  upd();
 })();
 </script>
 </body>
