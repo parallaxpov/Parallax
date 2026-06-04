@@ -60,7 +60,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .nav-inner{width:100%;max-width:1120px;margin:0 auto;padding:0 44px;display:flex;align-items:center;justify-content:space-between}
 .nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.22em;text-decoration:none;display:flex;align-items:center;gap:10px}
 .logo-icon{width:22px;height:22px;position:relative;flex-shrink:0}
-.logo-icon .li-hex{position:absolute;width:15px;height:15px;top:0;left:0;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--cyan);opacity:.8}
+.logo-icon .li-hex{position:absolute;width:13px;height:13px;top:0;left:0;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--cyan);opacity:.8}
 .logo-icon .li-circ{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--red);opacity:.8;bottom:0;right:0}
 .nav-links{display:flex;align-items:center;gap:28px;list-style:none}
 .nav-links a{font-family:var(--mono);font-size:12px;color:var(--text-mid);text-decoration:none;letter-spacing:.1em;transition:color .2s}
@@ -111,7 +111,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 @keyframes laCircleGlow{0%,100%{box-shadow:0 0 18px rgba(229,57,53,.28)}50%{box-shadow:0 0 36px rgba(229,57,53,.62)}}
 @keyframes laCircleGlitch{0%,84%,100%{transform:none;filter:none}85%{transform:translateX(-5px);filter:drop-shadow(7px 0 rgba(0,229,204,.7))}85.6%{transform:none;filter:none}87%{transform:translateX(4px);filter:drop-shadow(-5px 0 rgba(0,229,204,.55))}87.6%{transform:none;filter:none}}
 /* Cyan hex — horizontal line hatching */
-.la-hex{position:absolute;width:54%;height:54%;left:4%;top:34%;clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);background:repeating-linear-gradient(0deg,rgba(0,229,204,.9) 0px,rgba(0,229,204,.9) 1.5px,rgba(0,14,12,.74) 1.5px,rgba(0,14,12,.74) 6px);animation:laHexGlow 3s ease-in-out infinite .7s,laHexGlitch 11s infinite}
+.la-hex{position:absolute;width:62%;height:62%;left:4%;top:34%;clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);background:repeating-linear-gradient(0deg,rgba(0,229,204,.9) 0px,rgba(0,229,204,.9) 1.5px,rgba(0,14,12,.74) 1.5px,rgba(0,14,12,.74) 6px);animation:laHexGlow 3s ease-in-out infinite .7s,laHexGlitch 11s infinite}
 @keyframes laHexGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(0,229,204,.42))}50%{filter:drop-shadow(0 0 20px rgba(0,229,204,.72))}}
 @keyframes laHexGlitch{
   0%,84%,100%{clip-path:polygon(22% 4%,76% 0%,100% 46%,80% 100%,24% 100%,0% 54%);transform:none;filter:drop-shadow(0 0 8px rgba(0,229,204,.42))}
