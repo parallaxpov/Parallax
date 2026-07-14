@@ -163,7 +163,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 
 /* PROJECTS */
 #projects{padding:100px 0;border-top:var(--bd)}
-.projects-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:20px;padding-bottom:14px;-webkit-overflow-scrolling:touch}
+.projects-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:20px;padding:14px 0;-webkit-overflow-scrolling:touch}
 .projects-grid::-webkit-scrollbar{height:3px}
 .projects-grid::-webkit-scrollbar-thumb{background:rgba(0,229,204,.2);border-radius:2px}
 .project-card{position:relative;padding:22px;background:var(--bg2);transition:all .3s;cursor:pointer;overflow:hidden;scroll-snap-align:start;flex:0 0 calc(50% - 10px);min-width:280px}
@@ -427,8 +427,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
           <div class="si-row"><span class="si-key">role</span><span class="si-val c">InfoSec · AI Safety</span></div>
           <div class="si-row"><span class="si-key">location</span><span class="si-val">RU</span></div>
           <div class="si-row"><span class="si-key">year</span><span class="si-val">4 / 5.5</span></div>
-          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">InfoSec × AI Safety</span></div>
-          <div class="si-row"><span class="si-key">status</span><span class="si-val" style="color:#22c55e">online</span></div>
+          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">human factor × AI security</span></div>
+          <div class="si-row"><span class="si-key">status</span><span class="si-val" id="statusVal" style="color:#22c55e">online</span></div>
         </div>
         <div class="sysinfo-card">
           <div class="si-label">// current direction</div>
@@ -716,6 +716,10 @@ function applyLang(l){
   startTypewriter(t.hero_name,t.hero_pos);
 }
 document.getElementById('langToggle').addEventListener('click',()=>applyLang(lang==='ru'?'en':'ru'));
+
+/* Random status on load */
+const statusOptions=['online','playing Minecraft','sleep(100)','developing','secret','offline','error','connection lost'];
+document.getElementById('statusVal').textContent=statusOptions[Math.floor(Math.random()*statusOptions.length)];
 
 /* Typewriter — один курсор */
 let twActive=false;
