@@ -254,7 +254,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .pub-list{display:flex;flex-direction:column}
 .pub-item{display:grid;grid-template-columns:110px 1fr auto;gap:20px;align-items:center;padding:16px 0;border-bottom:var(--bd);text-decoration:none;color:inherit;transition:padding-left .2s}
 .pub-item:first-child{border-top:var(--bd)}
-.pub-item.locked{opacity:.45;cursor:default}.pub-item.linked:hover{padding-left:8px}.pub-item.linked:hover .pub-title{color:var(--cyan)}
+.pub-item{cursor:pointer}.pub-item.locked{opacity:.5}.pub-item:hover{padding-left:8px}.pub-item:hover .pub-title{color:var(--cyan)}
 .pub-date{font-family:var(--mono);font-size:13px;color:var(--text-dim)}.pub-title{font-size:15px;color:var(--text);transition:color .2s;display:flex;align-items:center;gap:8px}
 .lock-icon{font-size:13px;color:var(--text-dim)}.pub-tag{font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:.1em;white-space:nowrap}
 
@@ -598,18 +598,19 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <div class="conf-col">
         <div class="skills-col-title conf" data-i18n="skills_conf">// Confident — освоено</div>
         <div class="skill-item" data-tooltip="PT NAD — анализ реальных инцидентов, детектирование аномалий"><div class="skill-header"><span class="skill-name">Network Traffic Analysis</span><span class="skill-pct">82%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="82"></div></div></div>
-        <div class="skill-item" data-tooltip="КИИ, ПДн, ГОСТ Р 57580 — включая банковский сектор (RAD COP)"><div class="skill-header"><span class="skill-name">Regulatory Compliance</span><span class="skill-pct">85%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="85"></div></div></div>
-        <div class="skill-item" data-tooltip="рабочий документ аудитора, проверка соответствия ГОСТ Р 57580"><div class="skill-header"><span class="skill-name">Compliance Audit</span><span class="skill-pct">78%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="78"></div></div></div>
+        <div class="skill-item" data-tooltip="ПДн, КТ, КИИ, ГИС, ГОСТ Р 57580"><div class="skill-header"><span class="skill-name">Compliance & Audit</span><span class="skill-pct">85%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="85"></div></div></div>
         <div class="skill-item" data-tooltip="системный дизайн промптов, архитектура AI-персонажей"><div class="skill-header"><span class="skill-name">AI Prompt Engineering</span><span class="skill-pct">88%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="88"></div></div></div>
         <div class="skill-item" data-tooltip="академические работы, технические разборы, Habr"><div class="skill-header"><span class="skill-name">Technical Writing</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="80"></div></div></div>
-        <div class="skill-item" data-tooltip="Astra Linux, Рубикон Nova, MaxPatrol SIEM, Сканер-ВС"><div class="skill-header"><span class="skill-name">Certified Security Tools</span><span class="skill-pct">75%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="75"></div></div></div>
+        <div class="skill-item" data-tooltip="Astra Linux, Рубикон Nova, Сканер-ВС"><div class="skill-header"><span class="skill-name">Certified Security Tools</span><span class="skill-pct">75%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="75"></div></div></div>
+        <div class="skill-item" data-tooltip="курс Positive Technologies пройден — анализ событий безопасности (SIEM)"><div class="skill-header"><span class="skill-name">MaxPatrol SIEM</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="70"></div></div></div>
+        <div class="skill-item" data-tooltip="Wireshark · nmap · subfinder · httpx — курсы PT NAD и лабораторные работы"><div class="skill-header"><span class="skill-name">Network Reconnaissance</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill c" data-pct="70"></div></div></div>
       </div>
       <div class="lrn-col">
         <div class="skills-col-title lrn" data-i18n="skills_learn">// Learning — активно изучаю</div>
-        <div class="skill-item" data-tooltip="курс Positive Technologies — студент-тестировщик, июнь 2026"><div class="skill-header"><span class="skill-name">MaxPatrol SIEM</span><span class="skill-pct">35%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="35"></div></div></div>
         <div class="skill-item" data-tooltip="LLM-assisted разработка, архитектура AI-продуктов (SecureAI)"><div class="skill-header"><span class="skill-name">AI Engineering</span><span class="skill-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="55"></div></div></div>
         <div class="skill-item" data-tooltip="фишинг и когнитивные механики — исследование и защита"><div class="skill-header"><span class="skill-name">Cognitive Security Research</span><span class="skill-pct">60%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="60"></div></div></div>
-        <div class="skill-item" data-tooltip="сетевая разведка — курсы PT NAD и лабораторные работы"><div class="skill-header"><span class="skill-name">Wireshark · nmap · subfinder · httpx</span><span class="skill-pct">70%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="70"></div></div></div>
+        <div class="skill-item" data-tooltip="изучение основ"><div class="skill-header"><span class="skill-name">ML Engineering</span><span class="skill-pct">20%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="20"></div></div></div>
+        <div class="skill-item" data-tooltip="изучение основ прикладного учёного"><div class="skill-header"><span class="skill-name">Applied Science / Research Methods</span><span class="skill-pct">20%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="20"></div></div></div>
         <div class="skill-item" data-tooltip="профессиональное чтение и письмо уверенно, разговорная практика развивается"><div class="skill-header"><span class="skill-name">English B2</span><span class="skill-pct">80%</span></div><div class="skill-bar-track"><div class="skill-bar-fill p" data-pct="80"></div></div></div>
       </div>
     </div>
@@ -621,6 +622,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
     <div class="section-label">// 05 — <span data-i18n="pub_label">публикации</span></div>
     <div class="pub-note mono" data-i18n="pub_note">// публикуется по мере готовности, не по расписанию</div>
     <div class="pub-list reveal">
+      <div class="pub-item locked"><span class="pub-date">2026 Q3</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_icm">InfoSec Career Map</span></span><span class="pub-tag">Career · Research</span></div>
       <div class="pub-item locked"><span class="pub-date">2026 Q3</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_1">Mythos не взломает вашу систему. Он просто очень хочет помочь</span></span><span class="pub-tag">AI Research</span></div>
       <div class="pub-item locked"><span class="pub-date">2026 Q3</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_2">ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом</span></span><span class="pub-tag">AI Research</span></div>
       <div class="pub-item locked"><span class="pub-date">2026 Q4</span><span class="pub-title"><span class="lock-icon">🔒</span><span data-i18n="pub_3">Парасоциальные системы и ИИ: самоэксперимент</span></span><span class="pub-tag">AI · Psychology</span></div>
@@ -686,7 +688,7 @@ focus_label:'сейчас',focus_cmd:'focus --current',
 status_5:'курс PT MaxPatrol Blue Team',status_6:'работа над проектами (CARAI, RAD COP)',status_comment:'// открыт к коллаборации',
 log_1:'CARAI — разработка концепта и роадмап',log_2:'PT NAD — курс завершён',log_3:'Cognitive Phishing Inoculation — концепт и исследование',log_4:'PT MaxPatrol SIEM — курс завершён',log_5:'PT MaxPatrol Blue Team — курс в процессе',log_6:'RAD COP — проект в процессе',log_7:'серия статей на Habr — на доработке',
 skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',
-pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
+pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_icm:'InfoSec Career Map',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
 cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},
 en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',
 hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',
@@ -702,7 +704,7 @@ focus_label:'now',focus_cmd:'focus --current',
 status_5:'PT MaxPatrol Blue Team course',status_6:'working on projects (CARAI, RAD COP)',status_comment:'// open to collaboration',
 log_1:'CARAI concept development and roadmap',log_2:'PT NAD — course complete',log_3:'Cognitive phishing inoculation — concept & research',log_4:'PT MaxPatrol SIEM — course complete',log_5:'PT MaxPatrol Blue Team — course in progress',log_6:'RAD COP — project in progress',log_7:'Habr article series — in revision',
 skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',
-pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
+pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_icm:'InfoSec Career Map',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
 cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
 
 let lang='ru';
