@@ -154,6 +154,9 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .si-label{font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.04)}
 .si-row{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:13px;padding:3px 0}
 .si-key{color:var(--text-dim)}.si-val{color:var(--text-mid);text-align:right}
+.si-row.cert-row{cursor:pointer;transition:padding-left .2s}
+.si-row.cert-row:hover{padding-left:6px}
+.si-row.cert-row:hover .si-key{color:var(--cyan)}
 .si-val.c{color:var(--cyan)}.si-val.r{color:var(--red)}.si-val.p{color:var(--purple)}
 .uptime-bar{margin-top:8px;height:2px;background:rgba(255,255,255,.05);overflow:hidden}
 .uptime-fill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width 1.5s cubic-bezier(.4,0,.2,1) .3s}
@@ -218,6 +221,9 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .modal-sub{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:18px;letter-spacing:.12em}
 .modal-body p{font-size:15px;color:var(--text-mid);line-height:1.7;margin-bottom:14px}
 .modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.cert-modal .modal{max-width:420px}
+.cert-modal .modal-body{padding:16px}
+.cert-modal img{display:block;width:100%;border:var(--bc)}
 
 /* FOCUS */
 #focus{padding:100px 0;border-top:var(--bd)}
@@ -422,19 +428,22 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
           <div class="si-row"><span class="si-key">role</span><span class="si-val c">InfoSec · AI Safety</span></div>
           <div class="si-row"><span class="si-key">location</span><span class="si-val">RU</span></div>
           <div class="si-row"><span class="si-key">year</span><span class="si-val">4 / 5.5</span></div>
-          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">human × AI security systems</span></div>
+          <div class="si-row"><span class="si-key">focus</span><span class="si-val c">InfoSec × AI Safety</span></div>
           <div class="si-row"><span class="si-key">status</span><span class="si-val" style="color:#22c55e">online</span></div>
         </div>
         <div class="sysinfo-card">
           <div class="si-label">// current direction</div>
           <div class="si-row"><span class="si-key">SOC L1</span><span class="si-val c">Positive Technologies</span></div>
           <div class="si-row"><span class="si-key">Audit</span><span class="si-val c">RAD COP</span></div>
-          <div class="si-row"><span class="si-key">research</span><span class="si-val p">AI × Security intersection</span></div>
+          <div class="si-row"><span class="si-key">Research</span><span class="si-val p">AI × Security intersection</span></div>
+          <div class="si-row"><span class="si-key">dev</span><span class="si-val">SAI · CARAI · AR</span></div>
         </div>
         <div class="sysinfo-card">
           <div class="si-label">// certifications</div>
-          <div class="si-row"><span class="si-key">PT NAD</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
-          <div class="si-row"><span class="si-key">PT MaxPatrol SIEM</span><span class="si-val" style="color:#f59e0b">[IN PROGRESS]</span></div>
+          <div class="si-row cert-row" onclick="openCertModal('certs/pt-nad.png','PT NAD')"><span class="si-key">PT NAD</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row cert-row" onclick="openCertModal('certs/pt-siem.png','PT MaxPatrol SIEM')"><span class="si-key">PT MaxPatrol SIEM</span><span class="si-val" style="color:#22c55e">[DONE]</span></div>
+          <div class="si-row"><span class="si-key">PT Blue Team</span><span class="si-val" style="color:#f59e0b">[IN PROGRESS]</span></div>
+          <div class="si-row"><span class="si-key">PT Red Team</span><span class="si-val" style="color:var(--text-dim)">[PENDING]</span></div>
           <div class="si-row"><span class="si-key">BlueDot: Future of AI</span><span class="si-val" style="color:var(--text-dim)">[PENDING]</span></div>
           <div class="si-row"><span class="si-key">BlueDot: AGI Strategy</span><span class="si-val" style="color:var(--text-dim)">[PENDING]</span></div>
         </div>
@@ -529,6 +538,18 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         <span class="tag c" data-i18n="tag_game">Геймификация</span>
         <span class="tag c" data-i18n="tag_dip">Диплом</span>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop cert-modal" id="certModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="certModalTitle">// CERTIFICATE</span>
+      <button class="modal-close" onclick="closeCertModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="certModalImg" src="" alt="">
     </div>
   </div>
 </div>
@@ -743,6 +764,11 @@ function openModal(){document.getElementById('secureAIModal').classList.add('ope
 function closeModal(){document.getElementById('secureAIModal').classList.remove('open');document.body.style.overflow='';}
 document.getElementById('secureAIModal').addEventListener('click',e=>{if(e.target.id==='secureAIModal')closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function openCertModal(src,title){document.getElementById('certModalImg').src=src;document.getElementById('certModalImg').alt=title;document.getElementById('certModalTitle').textContent='// CERTIFICATE — '+title;document.getElementById('certModal').classList.add('open');document.body.style.overflow='hidden';}
+function closeCertModal(){document.getElementById('certModal').classList.remove('open');document.body.style.overflow='';}
+document.getElementById('certModal').addEventListener('click',e=>{if(e.target.id==='certModal')closeCertModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCertModal();});
 
 /* Reveal + Skills */
 const ro=new IntersectionObserver(entries=>{
