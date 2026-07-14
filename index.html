@@ -195,15 +195,14 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .keep-out-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;overflow:hidden;z-index:2}
 .carai-card:hover .keep-out-overlay:not(.permanent){animation:koIn .3s ease forwards,koOut .5s ease 10s forwards}
 .keep-out-overlay.permanent{opacity:1!important;animation:none!important}
-.keep-out-tape{position:absolute;width:220%;height:26px;display:flex;align-items:center;background:repeating-linear-gradient(90deg,var(--red) 0px,var(--red) 72px,#000 72px,#000 144px);transform:rotate(-7deg)}
-.keep-out-tape::before{content:'KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ ';font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.25em;color:#fff;padding:0 12px;white-space:nowrap}
-.tape-1{top:20%;left:-30%}.tape-2{top:50%;left:-30%}.tape-3{top:76%;left:-30%;transform:rotate(-5deg)}
+.keep-out-tape{position:absolute;width:220%;height:26px;display:flex;align-items:center;background:repeating-linear-gradient(90deg,rgba(229,57,53,.55) 0px,rgba(229,57,53,.55) 72px,rgba(20,8,8,.85) 72px,rgba(20,8,8,.85) 144px);transform:rotate(-7deg)}
+.keep-out-tape::before{content:'KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ KEEP OUT ⚠ ';font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.25em;color:#fff;padding:0 12px;white-space:nowrap}
+.tape-1{top:20%;left:-30%}.tape-2{top:50%;left:-30%}.tape-3{top:76%;left:-30%}
 @keyframes koIn{from{opacity:0}to{opacity:1}}@keyframes koOut{from{opacity:1}to{opacity:0}}
 
 .access-denied-overlay{display:none;position:absolute;inset:0;background:rgba(229,57,53,.06);align-items:center;justify-content:center;flex-direction:column;gap:8px;z-index:3}
 .access-denied-overlay.visible{display:flex}
 .ad-text{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--red);letter-spacing:.2em;text-shadow:0 0 30px rgba(229,57,53,.7);animation:adPulse 2s ease-in-out infinite}
-.ad-sub{font-family:var(--mono);font-size:11px;color:rgba(229,57,53,.5);letter-spacing:.15em}
 @keyframes adPulse{0%,100%{opacity:1}50%{opacity:.55}}
 @keyframes shake{0%{transform:translateX(0)}15%{transform:translateX(-9px) rotate(-.4deg)}30%{transform:translateX(9px) rotate(.4deg)}50%{transform:translateX(-6px)}70%{transform:translateX(5px)}85%{transform:translateX(-3px)}100%{transform:translateX(0)}}
 .carai-card.shaking{animation:shake .5s ease;box-shadow:0 0 0 2px var(--red),0 0 40px rgba(229,57,53,.3)!important}
@@ -479,7 +478,6 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         </div>
         <div class="access-denied-overlay" id="accessDenied">
           <div class="ad-text">[ACCESS DENIED]</div>
-          <div class="ad-sub" data-i18n="carai_denied">доступ будет открыт позже</div>
         </div>
         <div id="caraiContent">
           <div class="project-hex">0x02</div>
@@ -566,8 +564,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         <div class="terminal-body" style="font-size:12px">
           <div><span class="t-prompt">$</span> <span class="t-cmd" data-i18n="focus_cmd">focus --current</span></div>
           <span class="t-gap"></span>
-          <div class="t-out" data-i18n="status_5">курс PT MaxPatrol SIEM</div>
-          <div class="t-out" data-i18n="status_6">практика RAD COP (июнь–июль)</div>
+          <div class="t-out" data-i18n="status_5">курс PT MaxPatrol Blue Team</div>
+          <div class="t-out" data-i18n="status_6">работа над проектами (CARAI, RAD COP)</div>
           <span class="t-gap"></span>
           <div class="t-comment" data-i18n="status_comment">// открыт к коллаборации</div>
           <span class="t-gap"></span>
@@ -580,12 +578,13 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
           <div class="terminal-controls"><span></span><span></span><span></span></div>
         </div>
         <div class="trace-log-body" id="traceLog">
-          <div class="log-entry" data-delay="0"><span class="log-time">2026-03</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_6">CARAI разработка концепта и роадмап</span></div>
-          <div class="log-entry" data-delay="100"><span class="log-time">2026-04</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_2">PT NAD — все кейсы завершены</span></div>
-          <div class="log-entry" data-delay="200"><span class="log-time">2026-05</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_5">серия статей Habr — на доработке</span></div>
-          <div class="log-entry" data-delay="300"><span class="log-time">2026-05</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_4">Cognitive Phishing — концепт и исследование финализированы</span></div>
-          <div class="log-entry" data-delay="400"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_3">PT MaxPatrol SIEM — курс в процессе</span></div>
-          <div class="log-entry" data-delay="500"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_1">RAD COP практика — старт в конце июня</span></div>
+          <div class="log-entry" data-delay="0"><span class="log-time">2026-03</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_1">CARAI — разработка концепта и роадмап</span></div>
+          <div class="log-entry" data-delay="100"><span class="log-time">2026-04</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_2">PT NAD — курс завершён</span></div>
+          <div class="log-entry" data-delay="200"><span class="log-time">2026-05</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_3">Cognitive Phishing Inoculation — концепт и исследование</span></div>
+          <div class="log-entry" data-delay="300"><span class="log-time">2026-06</span><span class="log-level ok">[OK]</span><span class="log-msg hi" data-i18n="log_4">PT MaxPatrol SIEM — курс завершён</span></div>
+          <div class="log-entry" data-delay="400"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_5">PT MaxPatrol Blue Team — курс в процессе</span></div>
+          <div class="log-entry" data-delay="500"><span class="log-time">2026-06</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_6">RAD COP — проект в процессе</span></div>
+          <div class="log-entry" data-delay="600"><span class="log-time">2026-07</span><span class="log-level info">[INFO]</span><span class="log-msg" data-i18n="log_7">серия статей на Habr — на доработке</span></div>
         </div>
       </div>
     </div>
@@ -681,11 +680,11 @@ proj_label:'проекты',
 proj_sai_desc:'Дипломная работа. Геймифицированная платформа обучения безопасности ИИ. Система уровней, памяти, доверия. MVP ~70%.',
 proj_03_desc:'Методика и браузерный инструмент для обучения пользователей распознаванию фишинга через когнитивную нагрузку, а не фильтрацию.',
 proj_04_desc:'AI-ассистент для умных очков, специализированный на российском законодательстве. Live-система защиты от обмана.',
-tag_edu:'Образование',tag_game:'Геймификация',tag_dip:'Диплом',proj_more:'подробнее',proj_access:'получить доступ',carai_denied:'доступ будет открыт позже',
+tag_edu:'Образование',tag_game:'Геймификация',tag_dip:'Диплом',proj_more:'подробнее',proj_access:'получить доступ',
 modal_sub:'дипломная работа · 2025–2027',modal_p1:'Платформа геймифицированного обучения информационной безопасности, где ИИ выступает не просто инструментом, а полноценным нарратором и участником образовательного процесса.',modal_p2:'Стек: React/TypeScript/Vite, Node.js, Gemini API. Системы: доверие 0–100, эмоциональные состояния ИИ-персонажа, долгосрочная память. Статус: MVP ~70%.',
 focus_label:'сейчас',focus_cmd:'focus --current',
-status_5:'курс PT MaxPatrol SIEM',status_6:'практика RAD COP (июнь–июль)',status_comment:'// открыт к коллаборации',
-log_1:'RAD COP практика — старт в конце июня',log_2:'PT NAD — все кейсы завершены',log_3:'PT MaxPatrol SIEM — курс в процессе',log_4:'Cognitive Phishing — концепт и исследование финализированы',log_5:'серия статей Habr — на доработке',log_6:'CARAI разработка концепта и роадмап',
+status_5:'курс PT MaxPatrol Blue Team',status_6:'работа над проектами (CARAI, RAD COP)',status_comment:'// открыт к коллаборации',
+log_1:'CARAI — разработка концепта и роадмап',log_2:'PT NAD — курс завершён',log_3:'Cognitive Phishing Inoculation — концепт и исследование',log_4:'PT MaxPatrol SIEM — курс завершён',log_5:'PT MaxPatrol Blue Team — курс в процессе',log_6:'RAD COP — проект в процессе',log_7:'серия статей на Habr — на доработке',
 skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',
 pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
 cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},
@@ -697,11 +696,11 @@ proj_label:'projects',
 proj_sai_desc:'Thesis project. Gamified AI security learning platform. Systems: levels, memory, trust. MVP ~70%.',
 proj_03_desc:'Methodology and browser tool for training users to recognize phishing through cognitive load, not filtering.',
 proj_04_desc:'AI assistant for smart glasses, specialized in Russian law. Live anti-deception protection system.',
-tag_edu:'Education',tag_game:'Gamification',tag_dip:'Thesis',proj_more:'learn more',proj_access:'request access',carai_denied:'access will be granted later',
+tag_edu:'Education',tag_game:'Gamification',tag_dip:'Thesis',proj_more:'learn more',proj_access:'request access',
 modal_sub:'thesis · 2025–2027',modal_p1:'A gamified information security training platform where AI acts not just as a tool but as a full narrator and participant in the learning process.',modal_p2:'Stack: React/TypeScript/Vite, Node.js, Gemini API. Systems: trust 0–100, AI character emotional states, long-term memory. Status: MVP ~70%.',
 focus_label:'now',focus_cmd:'focus --current',
-status_5:'PT MaxPatrol SIEM course',status_6:'RAD COP practice (June–July)',status_comment:'// open to collaboration',
-log_1:'RAD COP practice — starting end of June',log_2:'PT NAD — all cases completed',log_3:'PT MaxPatrol SIEM — course in progress',log_4:'Cognitive phishing inoculation — concept & research finalized',log_5:'Habr article series — in revision',log_6:'CARAI concept development and roadmap',
+status_5:'PT MaxPatrol Blue Team course',status_6:'working on projects (CARAI, RAD COP)',status_comment:'// open to collaboration',
+log_1:'CARAI concept development and roadmap',log_2:'PT NAD — course complete',log_3:'Cognitive phishing inoculation — concept & research',log_4:'PT MaxPatrol SIEM — course complete',log_5:'PT MaxPatrol Blue Team — course in progress',log_6:'RAD COP — project in progress',log_7:'Habr article series — in revision',
 skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',
 pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
 cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
