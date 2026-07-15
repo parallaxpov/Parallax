@@ -347,6 +347,36 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-crack-stage.is-outlined .lair-crack-branches-outline,
 .lair-crack-stage.is-outlined .lair-crack-core-outline{opacity:1}
 
+/* Click 2, stage 3: flash — gradient sheet blooming up from the bottom
+   edge of the footer, dissipating as it rises; z-index above the crack
+   so it washes out the colour layers (the black outline stays legible
+   through it) */
+.lair-flash{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:10;transform-origin:50% 100%;transform:scaleY(.3);
+  /* the crack itself (and the burst rays further still) overflow well
+     beyond the footer's own box in every direction, so the flash needs
+     the same generous margin or it only washes out a slice of the middle */
+  background:linear-gradient(to top,rgba(255,255,255,.95) 0%,rgba(0,240,255,.55) 32%,rgba(139,92,246,.28) 60%,transparent 100%)}
+.lair-flash.is-flashing{animation:lairFlash .8s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes lairFlash{
+  0%{opacity:0;transform:scaleY(.3)}
+  30%{opacity:1;transform:scaleY(1.05)}
+  100%{opacity:0;transform:scaleY(1.25)}
+}
+
+/* Click 2, stage 4: burst rays — brief scale+fade blips, on top of the
+   flash (z-index above it) so the black rays stay visible against the
+   bright wash, small random per-ray delay for a "crackle" desync rather
+   than a visible sweep */
+.lair-burst{position:absolute;left:55.49%;top:54.97%;width:158.2%;aspect-ratio:1163/687;transform:translate(-50%,-50%);pointer-events:none;z-index:11}
+.lair-burst svg{display:block;width:100%;height:100%;overflow:visible}
+.lair-burst svg [id^="ray-"]{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(0)}
+.lair-burst.is-bursting svg [id^="ray-"]{animation:rayBurst .55s ease-out forwards;animation-delay:var(--ray-delay,0s)}
+@keyframes rayBurst{
+  0%{opacity:0;transform:scale(0)}
+  35%{opacity:1;transform:scale(1.1)}
+  100%{opacity:0;transform:scale(1)}
+}
+
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
 .fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
@@ -746,7 +776,9 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <div class="lair-crack-core-outline" id="lairCrackCoreOutline"></div>
       <div class="lair-crack-branches" id="lairCrackBranches"></div>
       <div class="lair-crack-core" id="lairCrackCore"></div>
+      <div class="lair-burst" id="lairBurst"></div>
     </div>
+    <div class="lair-flash" id="lairFlash"></div>
   </div>
 </footer>
 
@@ -1093,15 +1125,27 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     loadSvg('assets/crack-branches-outline.svg',branchesHost);
   }
 
+  function prefetchBurst(){
+    const host=document.getElementById('lairBurst');
+    if(!host||host.querySelector('svg'))return;
+    fetch('assets/crack-burst.svg').then(r=>{
+      if(!r.ok)throw new Error('HTTP '+r.status+' for crack-burst.svg');
+      return r.text();
+    }).then(svgText=>{host.innerHTML=svgText;}).catch(err=>{
+      console.error('[lair] failed to load crack-burst.svg',err);
+    });
+  }
+
   function crackOpen(){
     overlay.classList.add('is-open');
     revealCore();
     traceBranches();
     buildChargeClones();
     // Not needed until click 2, but small enough to fetch now in the
-    // background so there's no network lag when the outline actually
-    // needs to appear mid-explosion.
+    // background so there's no network lag when the outline/burst actually
+    // need to appear mid-explosion.
     prefetchOutlines();
+    prefetchBurst();
     lairModulePromise=import('./lair.js').catch(err=>{
       console.error('[lair] chunk load failed',err);
     });
@@ -1165,20 +1209,40 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     });
   }
 
+  const FLASH_DURATION_MS=800;
+  const FLASH_PEAK_MS=240; // 30% of FLASH_DURATION_MS, matches the lairFlash keyframe's peak
+
+  function fireFlash(){
+    const flash=document.getElementById('lairFlash');
+    if(flash)flash.classList.add('is-flashing');
+  }
+
+  function fireBurst(){
+    const host=document.getElementById('lairBurst');
+    const svg=host?host.querySelector('svg'):null;
+    if(!svg)return;
+    svg.querySelectorAll('[id^="ray-"]').forEach(el=>{
+      el.style.setProperty('--ray-delay',(Math.random()*0.09).toFixed(3)+'s');
+    });
+    host.classList.add('is-bursting');
+  }
+
   function crackExplode(){
     lairState='sparking';
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
     fireSpark();
     // Right as the spark finishes reaching the tips, bring in the outline
-    // layers — one fade, no per-element stagger (unlike click 1's reveal).
-    // +120ms covers the double-rAF priming delay in fireSpark() plus a
-    // small buffer, same pattern as REVEAL_TOTAL_MS.
+    // layers — one fade, no per-element stagger (unlike click 1's reveal) —
+    // together with the flash; the burst rays flick on separately, timed to
+    // the flash's own peak. +120ms covers the double-rAF priming delay in
+    // fireSpark() plus a small buffer, same pattern as REVEAL_TOTAL_MS.
     setTimeout(()=>{
       if(stage)stage.classList.add('is-outlined');
       lairState='outlined';
+      fireFlash();
+      setTimeout(fireBurst,FLASH_PEAK_MS);
     },SPARK_DURATION_MS+120);
-    // TODO next step: fire the flash, flick on the burst rays, fade the
-    // footer, then mount #lair.
+    // TODO next step: fade the footer, then mount #lair.
   }
 
   function onTriggerActivate(){
