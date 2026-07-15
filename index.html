@@ -289,8 +289,10 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-crack-core,.lair-crack-core-outline{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
 .lair-crack-branches svg,.lair-crack-core svg,
 .lair-crack-branches-outline svg,.lair-crack-core-outline svg{display:block;width:100%;height:100%;overflow:visible}
-/* Outline layers sit behind the colour layers (DOM order) and start hidden */
-.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .3s ease}
+/* Outline layers sit behind the colour layers by default (DOM order) and
+   start hidden; they get promoted above everything (z-index, set in the
+   .is-outlined active rule further down) for their "impact frame" beat */
+.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .15s ease}
 
 /* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
 #lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
@@ -341,33 +343,51 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .branch-spark{opacity:0;stroke:#fff;stroke-width:2.5px;filter:brightness(2.2) drop-shadow(0 0 6px #fff);pointer-events:none}
 .lair-crack-branches.is-sparking .branch-spark{opacity:1;transition:stroke-dashoffset .55s cubic-bezier(.3,0,.7,1)}
 
-/* Click 2, stage 2: outline layers fade in together (no per-element stagger,
-   unlike the click 1 reveal) right as the spark reaches the tips — gives
-   the crack contour/contrast right at the peak brightness moment */
-.lair-crack-stage.is-outlined .lair-crack-branches-outline,
-.lair-crack-stage.is-outlined .lair-crack-core-outline{opacity:1}
-
-/* Click 2, stage 3: flash — gradient sheet blooming up from the bottom
-   edge of the footer, dissipating as it rises; z-index above the crack
-   so it washes out the colour layers (the black outline stays legible
-   through it) */
+/* Click 2, stage 2: colour flash — gradient sheet blooming up from the
+   bottom edge, dissipating as it rises. Runs long enough (1.8s) to
+   actually register before the white impact flash cuts in right after
+   it — that's the "windup", not the hit. */
 .lair-flash{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:10;transform-origin:50% 100%;transform:scaleY(.3);
   /* the crack itself (and the burst rays further still) overflow well
      beyond the footer's own box in every direction, so the flash needs
      the same generous margin or it only washes out a slice of the middle */
   background:linear-gradient(to top,rgba(255,255,255,.95) 0%,rgba(0,240,255,.55) 32%,rgba(139,92,246,.28) 60%,transparent 100%)}
-.lair-flash.is-flashing{animation:lairFlash .8s cubic-bezier(.16,1,.3,1) forwards}
+.lair-flash.is-flashing{animation:lairFlash 1.8s cubic-bezier(.16,1,.3,1) forwards}
 @keyframes lairFlash{
   0%{opacity:0;transform:scaleY(.3)}
-  30%{opacity:1;transform:scaleY(1.05)}
+  15%{opacity:1;transform:scaleY(1.02)}
+  55%{opacity:.88;transform:scaleY(1.08)}
   100%{opacity:0;transform:scaleY(1.25)}
 }
 
-/* Click 2, stage 4: burst rays — brief scale+fade blips, on top of the
-   flash (z-index above it) so the black rays stay visible against the
-   bright wash, small random per-ray delay for a "crackle" desync rather
-   than a visible sweep */
-.lair-burst{position:absolute;left:55.49%;top:54.97%;width:158.2%;aspect-ratio:1163/687;transform:translate(-50%,-50%);pointer-events:none;z-index:11}
+/* Click 2, stage 3: white impact flash — the "hit". Starts overlapping
+   the colour flash's tail (no gap, per spec: back to back, not
+   sequential-with-a-pause), snaps to full white almost instantly, holds
+   a beat, cuts out. The outline ("impact frame") and burst rays both
+   fire right on the snap — see fireImpact() — so everything lands on the
+   same beat, on top of the white. */
+.lair-flash-white{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:11;
+  background:radial-gradient(ellipse 70% 60% at 50% 62%,#fff 0%,rgba(255,255,255,.9) 45%,rgba(255,255,255,0) 78%)}
+.lair-flash-white.is-flashing{animation:lairFlashWhite .5s cubic-bezier(.1,.8,.2,1) forwards}
+@keyframes lairFlashWhite{
+  0%{opacity:0}
+  8%{opacity:1}
+  30%{opacity:.94}
+  100%{opacity:0}
+}
+
+/* The impact frame itself: outline layers promoted above the white flash
+   (z-index) right as it snaps, so the black contour reads clearly against
+   it — this pairing (white + black outline, same instant) is the impact
+   frame */
+.lair-crack-stage.is-outlined .lair-crack-branches-outline,
+.lair-crack-stage.is-outlined .lair-crack-core-outline{opacity:1;z-index:12}
+
+/* Click 2, stage 4: burst rays — on top of even the outline, brief
+   scale+fade blips with a small random per-ray delay for a "crackle"
+   desync rather than a visible sweep, fired on the same beat as the
+   impact frame */
+.lair-burst{position:absolute;left:55.49%;top:54.97%;width:158.2%;aspect-ratio:1163/687;transform:translate(-50%,-50%);pointer-events:none;z-index:13}
 .lair-burst svg{display:block;width:100%;height:100%;overflow:visible}
 .lair-burst svg [id^="ray-"]{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(0)}
 .lair-burst.is-bursting svg [id^="ray-"]{animation:rayBurst .55s ease-out forwards;animation-delay:var(--ray-delay,0s)}
@@ -779,6 +799,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <div class="lair-burst" id="lairBurst"></div>
     </div>
     <div class="lair-flash" id="lairFlash"></div>
+    <div class="lair-flash-white" id="lairFlashWhite"></div>
   </div>
 </footer>
 
@@ -1209,38 +1230,54 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     });
   }
 
-  const FLASH_DURATION_MS=800;
-  const FLASH_PEAK_MS=240; // 30% of FLASH_DURATION_MS, matches the lairFlash keyframe's peak
+  // Two flashes back to back, game hit-flash style: a long-ish colour
+  // "windup" flash, immediately followed (overlapping its tail, no gap)
+  // by a short, near-instant white "impact" flash. The outline ("impact
+  // frame") and burst rays both fire on the white flash's snap, not the
+  // colour flash's — that's the whole point, contour+rays land exactly
+  // when the screen goes white, like a fighting-game super-hit.
+  const FLASH_DURATION_MS=1800;
+  const WHITE_FLASH_OVERLAP_MS=150; // white flash starts this far before the colour flash's natural end
+  const WHITE_FLASH_SNAP_MS=40; // matches the 8% mark of lairFlashWhite's 0.5s keyframe
 
   function fireFlash(){
     const flash=document.getElementById('lairFlash');
     if(flash)flash.classList.add('is-flashing');
   }
 
-  function fireBurst(){
+  function fireWhiteFlash(){
+    const flash=document.getElementById('lairFlashWhite');
+    if(flash)flash.classList.add('is-flashing');
+  }
+
+  function fireImpact(){
+    // outline
+    if(stage)stage.classList.add('is-outlined');
+    lairState='outlined';
+    // burst rays
     const host=document.getElementById('lairBurst');
     const svg=host?host.querySelector('svg'):null;
-    if(!svg)return;
-    svg.querySelectorAll('[id^="ray-"]').forEach(el=>{
-      el.style.setProperty('--ray-delay',(Math.random()*0.09).toFixed(3)+'s');
-    });
-    host.classList.add('is-bursting');
+    if(svg){
+      svg.querySelectorAll('[id^="ray-"]').forEach(el=>{
+        el.style.setProperty('--ray-delay',(Math.random()*0.09).toFixed(3)+'s');
+      });
+      host.classList.add('is-bursting');
+    }
   }
 
   function crackExplode(){
     lairState='sparking';
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
     fireSpark();
-    // Right as the spark finishes reaching the tips, bring in the outline
-    // layers — one fade, no per-element stagger (unlike click 1's reveal) —
-    // together with the flash; the burst rays flick on separately, timed to
-    // the flash's own peak. +120ms covers the double-rAF priming delay in
-    // fireSpark() plus a small buffer, same pattern as REVEAL_TOTAL_MS.
+    // +120ms covers the double-rAF priming delay in fireSpark() plus a
+    // small buffer, same pattern as REVEAL_TOTAL_MS — colour flash starts
+    // right as the spark finishes reaching the tips.
     setTimeout(()=>{
-      if(stage)stage.classList.add('is-outlined');
-      lairState='outlined';
       fireFlash();
-      setTimeout(fireBurst,FLASH_PEAK_MS);
+      setTimeout(()=>{
+        fireWhiteFlash();
+        setTimeout(fireImpact,WHITE_FLASH_SNAP_MS);
+      },FLASH_DURATION_MS-WHITE_FLASH_OVERLAP_MS);
     },SPARK_DURATION_MS+120);
     // TODO next step: fade the footer, then mount #lair.
   }
