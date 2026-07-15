@@ -294,6 +294,10 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 #lairCrackCore svg.crack-reveal path{opacity:1;transform:scale(1)}
 .lair-crack-branches g[id^="branch-"].branch-draw line{transition:stroke-dashoffset .28s ease;transition-delay:calc(var(--branch-i,0) * .18s)}
 
+/* Hover after click 1 — "заряд": brighter charge copy per branch, frozen mid-draw */
+.branch-charge{opacity:0;stroke-width:3px;filter:brightness(1.8) drop-shadow(0 0 5px rgba(255,255,255,.55));transition:opacity .2s ease;pointer-events:none}
+.lair-crack-overlay.is-charged .branch-charge{opacity:1}
+
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
 .fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
@@ -976,7 +980,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     }
     groups.forEach((g,i)=>{
       g.style.setProperty('--branch-i',i);
-      g.querySelectorAll('line').forEach(line=>{
+      g.querySelectorAll('line:not(.branch-charge)').forEach(line=>{
         const len=line.getTotalLength();
         line.style.strokeDasharray=len;
         line.style.strokeDashoffset=len;
@@ -993,19 +997,41 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
       requestAnimationFrame(()=>{
         groups.forEach(g=>{
           g.classList.add('branch-draw');
-          g.querySelectorAll('line').forEach(line=>{line.style.strokeDashoffset='0';});
+          g.querySelectorAll('line:not(.branch-charge)').forEach(line=>{line.style.strokeDashoffset='0';});
         });
       });
     });
+  }
+
+  function buildChargeClones(){
+    const svg=document.querySelector('#lairCrackBranches svg');
+    if(!svg)return;
+    for(let i=1;i<=11;i++){
+      const g=svg.querySelector('#branch-'+i);
+      if(!g||g.querySelector('.branch-charge'))continue; // built already
+      g.querySelectorAll('line').forEach(line=>{
+        const clone=line.cloneNode();
+        clone.classList.add('branch-charge');
+        const len=line.getTotalLength();
+        clone.style.strokeDasharray=len;
+        clone.style.strokeDashoffset=len*0.5; // frozen mid-draw, not animated
+        g.appendChild(clone);
+      });
+    }
   }
 
   function crackOpen(){
     overlay.classList.add('is-open');
     revealCore();
     traceBranches();
+    buildChargeClones();
     lairModulePromise=import('./lair.js').catch(err=>{
       console.error('[lair] chunk load failed',err);
     });
+    // the cursor may already be resting on the trigger from the click
+    // itself — mouseenter won't fire again since it never left, so pick
+    // up the already-hovering case explicitly now that we're "cracked".
+    if(isHoveringTrigger)showCharge();
   }
 
   function onTriggerActivate(){
@@ -1016,10 +1042,22 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     // click 2 ("взрыв") and beyond land in a later phase
   }
 
+  let isHoveringTrigger=false;
+  function showCharge(){
+    if(lairState==='cracked')overlay.classList.add('is-charged');
+  }
+  function hideCharge(){
+    overlay.classList.remove('is-charged');
+  }
+
   trigger.addEventListener('click',onTriggerActivate);
   trigger.addEventListener('keydown',e=>{
     if(e.key==='Enter'||e.key===' '){e.preventDefault();onTriggerActivate();}
   });
+  trigger.addEventListener('mouseenter',()=>{isHoveringTrigger=true;showCharge();});
+  trigger.addEventListener('mouseleave',()=>{isHoveringTrigger=false;hideCharge();});
+  trigger.addEventListener('focus',showCharge);
+  trigger.addEventListener('blur',hideCharge);
 })();
 
 /* Фоновые цифры */
