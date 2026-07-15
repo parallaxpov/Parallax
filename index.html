@@ -285,9 +285,12 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
 .lair-crack-overlay.is-open{opacity:1;visibility:visible}
 .lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408;pointer-events:none}
-.lair-crack-branches{position:absolute;inset:0}
-.lair-crack-core{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
-.lair-crack-branches svg,.lair-crack-core svg{display:block;width:100%;height:100%;overflow:visible}
+.lair-crack-branches,.lair-crack-branches-outline{position:absolute;inset:0}
+.lair-crack-core,.lair-crack-core-outline{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
+.lair-crack-branches svg,.lair-crack-core svg,
+.lair-crack-branches-outline svg,.lair-crack-core-outline svg{display:block;width:100%;height:100%;overflow:visible}
+/* Outline layers sit behind the colour layers (DOM order) and start hidden */
+.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .3s ease}
 
 /* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
 #lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
@@ -337,6 +340,12 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
    light is visible per line segment while it travels */
 .branch-spark{opacity:0;stroke:#fff;stroke-width:2.5px;filter:brightness(2.2) drop-shadow(0 0 6px #fff);pointer-events:none}
 .lair-crack-branches.is-sparking .branch-spark{opacity:1;transition:stroke-dashoffset .55s cubic-bezier(.3,0,.7,1)}
+
+/* Click 2, stage 2: outline layers fade in together (no per-element stagger,
+   unlike the click 1 reveal) right as the spark reaches the tips — gives
+   the crack contour/contrast right at the peak brightness moment */
+.lair-crack-stage.is-outlined .lair-crack-branches-outline,
+.lair-crack-stage.is-outlined .lair-crack-core-outline{opacity:1}
 
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
@@ -733,6 +742,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   </div>
   <div class="lair-crack-overlay" id="lairCrackOverlay" aria-hidden="true">
     <div class="lair-crack-stage" id="lairCrackStage">
+      <div class="lair-crack-branches-outline" id="lairCrackBranchesOutline"></div>
+      <div class="lair-crack-core-outline" id="lairCrackCoreOutline"></div>
       <div class="lair-crack-branches" id="lairCrackBranches"></div>
       <div class="lair-crack-core" id="lairCrackCore"></div>
     </div>
@@ -1066,11 +1077,31 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     }
   }
 
+  function prefetchOutlines(){
+    const coreHost=document.getElementById('lairCrackCoreOutline');
+    const branchesHost=document.getElementById('lairCrackBranchesOutline');
+    function loadSvg(url,host){
+      if(!host||host.querySelector('svg'))return; // already loaded
+      fetch(url).then(r=>{
+        if(!r.ok)throw new Error('HTTP '+r.status+' for '+url);
+        return r.text();
+      }).then(svgText=>{host.innerHTML=svgText;}).catch(err=>{
+        console.error('[lair] failed to load',url,err);
+      });
+    }
+    loadSvg('assets/crack-core-outline.svg',coreHost);
+    loadSvg('assets/crack-branches-outline.svg',branchesHost);
+  }
+
   function crackOpen(){
     overlay.classList.add('is-open');
     revealCore();
     traceBranches();
     buildChargeClones();
+    // Not needed until click 2, but small enough to fetch now in the
+    // background so there's no network lag when the outline actually
+    // needs to appear mid-explosion.
+    prefetchOutlines();
     lairModulePromise=import('./lair.js').catch(err=>{
       console.error('[lair] chunk load failed',err);
     });
@@ -1138,9 +1169,16 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     lairState='sparking';
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
     fireSpark();
-    // TODO next step: once the spark reaches the tips (SPARK_DURATION_MS
-    // out), fade in the outline SVGs, fire the flash, flick on the burst
-    // rays, fade the footer, then mount #lair.
+    // Right as the spark finishes reaching the tips, bring in the outline
+    // layers — one fade, no per-element stagger (unlike click 1's reveal).
+    // +120ms covers the double-rAF priming delay in fireSpark() plus a
+    // small buffer, same pattern as REVEAL_TOTAL_MS.
+    setTimeout(()=>{
+      if(stage)stage.classList.add('is-outlined');
+      lairState='outlined';
+    },SPARK_DURATION_MS+120);
+    // TODO next step: fire the flash, flick on the burst rays, fade the
+    // footer, then mount #lair.
   }
 
   function onTriggerActivate(){
