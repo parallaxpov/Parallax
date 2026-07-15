@@ -274,6 +274,13 @@ footer{border-top:var(--bd);padding:36px 0}
 .footer-log .ok{color:#22c55e}.footer-log .warn{color:#f59e0b}
 .footer-copy{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-align:right;line-height:2}
 
+/* LAIR trigger — hidden anchor riding the manifesto line, FX-gated */
+.lair-trigger{position:relative;display:inline-block;width:6px;height:6px;margin-left:9px;border-radius:50%;background:var(--text-dim);opacity:.4;cursor:pointer;vertical-align:middle;transition:opacity .3s ease,background-color .3s ease,box-shadow .3s ease;animation:lairTriggerIdle 4.6s ease-in-out infinite;outline:none}
+.lair-trigger::after{content:'';position:absolute;inset:-9px}
+.lair-trigger:hover,.lair-trigger:focus-visible{opacity:1;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+@keyframes lairTriggerIdle{0%,100%{transform:translate(0,0) scale(1)}22%{transform:translate(.4px,-.3px) scale(1.04)}48%{transform:translate(-.3px,.4px) scale(.97)}74%{transform:translate(.3px,.3px) scale(1.02)}}
+body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;animation:none!important}
+
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
 .fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
@@ -660,7 +667,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       <div class="footer-log">
         <div><span class="ok">[OK]</span>&nbsp; система инициализирована</div>
         <div><span class="warn">[···]</span> портфолио в активной разработке</div>
-        <div style="margin-top:2px">// понять. познать. защитить.</div>
+        <div style="margin-top:2px">// понять. познать. защитить.<span class="lair-trigger" id="lairTrigger" role="button" tabindex="0" aria-label="?"></span></div>
       </div>
       <div class="footer-copy">
         <div>PARALLAX © 2026</div>
