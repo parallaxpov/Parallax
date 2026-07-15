@@ -284,7 +284,7 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 /* LAIR crack overlay — inline-embedded SVGs, hidden until the trigger fires */
 .lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
 .lair-crack-overlay.is-open{opacity:1;visibility:visible}
-.lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408}
+.lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408;pointer-events:none}
 .lair-crack-branches{position:absolute;inset:0}
 .lair-crack-core{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
 .lair-crack-branches svg,.lair-crack-core svg{display:block;width:100%;height:100%;overflow:visible}
@@ -294,9 +294,43 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 #lairCrackCore svg.crack-reveal path{opacity:1;transform:scale(1)}
 .lair-crack-branches g[id^="branch-"].branch-draw line{transition:stroke-dashoffset .28s ease;transition-delay:calc(var(--branch-i,0) * .18s)}
 
-/* Hover after click 1 — "заряд": brighter charge copy per branch, frozen mid-draw */
-.branch-charge{opacity:0;stroke-width:3px;filter:brightness(1.8) drop-shadow(0 0 5px rgba(255,255,255,.55));transition:opacity .2s ease;pointer-events:none}
-.lair-crack-overlay.is-charged .branch-charge{opacity:1}
+/* Charge copy per branch — brighter clone frozen mid-draw, reused below
+   both as the idle "ghost double" flicker and as raw material for the
+   hover brightness boost */
+.branch-charge{opacity:0;stroke-width:3px;filter:brightness(1.8) drop-shadow(0 0 5px rgba(255,255,255,.55));pointer-events:none}
+
+/* Once the reveal animation has actually finished, the whole crack
+   becomes its own hover/click surface (not just the tiny footer dot),
+   and gains a subtle self-playing "alive" idle: flicker, jitter, and an
+   occasional ghost-double blip — inviting a click without needing hover. */
+.lair-crack-stage.is-revealed{pointer-events:auto;cursor:pointer;animation:crackIdleJitter 5.5s ease-in-out infinite}
+@keyframes crackIdleJitter{
+  0%,100%{transform:translate(0,0)}
+  30%{transform:translate(.6px,-.4px)}
+  55%{transform:translate(-.5px,.5px)}
+  80%{transform:translate(.4px,.3px)}
+}
+.lair-crack-stage.is-revealed .branch-charge{animation:crackGhostPulse 6.4s ease-in-out infinite}
+@keyframes crackGhostPulse{
+  0%,88%,100%{opacity:0}
+  91%{opacity:.22}
+  94%{opacity:.05}
+  97%{opacity:.16}
+}
+.lair-crack-stage.is-revealed #lairCrackCore svg{animation:crackFlicker 7s ease-in-out infinite}
+@keyframes crackFlicker{
+  0%,94%,100%{opacity:1}
+  95%{opacity:.75}
+  96%{opacity:1}
+  97.5%{opacity:.85}
+}
+
+/* Hover (mouse over the crack itself) or keyboard focus on the trigger —
+   a bit brighter on top of the idle animation, the "come click me" nudge */
+.lair-crack-stage.is-revealed:hover .branch-charge,
+.lair-crack-stage.is-hover-boost .branch-charge{opacity:.5!important;animation-play-state:paused}
+.lair-crack-stage.is-revealed:hover #lairCrackCore svg,
+.lair-crack-stage.is-hover-boost #lairCrackCore svg{filter:brightness(1.25);animation-play-state:paused}
 
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
@@ -957,8 +991,14 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   const overlay=document.getElementById('lairCrackOverlay');
   if(!trigger||!overlay)return;
 
-  let lairState='idle'; // idle -> cracked -> (later phases) charged -> exploded
+  const stage=document.getElementById('lairCrackStage');
+  let lairState='idle'; // idle -> cracking -> revealed -> (later phase) exploded
   let lairModulePromise=null;
+
+  // Matches the reveal timings below: core finishes at (28-1)*10ms+220ms
+  // strip stagger/duration, branches at (11-1)*180ms+280ms stagger/duration
+  // — branches take longer, so that's the real total, plus a small buffer.
+  const REVEAL_TOTAL_MS=(11-1)*180+280+120;
 
   function revealCore(){
     const svg=document.querySelector('#lairCrackCore svg');
@@ -1028,36 +1068,49 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     lairModulePromise=import('./lair.js').catch(err=>{
       console.error('[lair] chunk load failed',err);
     });
-    // the cursor may already be resting on the trigger from the click
-    // itself — mouseenter won't fire again since it never left, so pick
-    // up the already-hovering case explicitly now that we're "cracked".
-    if(isHoveringTrigger)showCharge();
+    // Hover/click on the crack itself only make sense once it's actually
+    // finished drawing — wait out the real reveal duration before handing
+    // interactivity to the crack (the tiny trigger dot stays functional
+    // throughout, this only gates the newly-interactive crack surface).
+    setTimeout(()=>{
+      lairState='revealed';
+      if(stage)stage.classList.add('is-revealed');
+    },REVEAL_TOTAL_MS);
   }
 
   function onTriggerActivate(){
     if(lairState==='idle'){
-      lairState='cracked';
+      lairState='cracking';
       crackOpen();
+    } else if(lairState==='revealed'){
+      // click 2 ("взрыв") lands in a later phase
     }
-    // click 2 ("взрыв") and beyond land in a later phase
   }
 
-  let isHoveringTrigger=false;
-  function showCharge(){
-    if(lairState==='cracked')overlay.classList.add('is-charged');
+  function showHoverBoost(){
+    if(lairState==='revealed'&&stage)stage.classList.add('is-hover-boost');
   }
-  function hideCharge(){
-    overlay.classList.remove('is-charged');
+  function hideHoverBoost(){
+    if(stage)stage.classList.remove('is-hover-boost');
   }
 
   trigger.addEventListener('click',onTriggerActivate);
   trigger.addEventListener('keydown',e=>{
     if(e.key==='Enter'||e.key===' '){e.preventDefault();onTriggerActivate();}
   });
-  trigger.addEventListener('mouseenter',()=>{isHoveringTrigger=true;showCharge();});
-  trigger.addEventListener('mouseleave',()=>{isHoveringTrigger=false;hideCharge();});
-  trigger.addEventListener('focus',showCharge);
-  trigger.addEventListener('blur',hideCharge);
+  // Keyboard users can't hover the crack graphic itself, so focusing the
+  // (still-present, still-tabbable) trigger dot gives the same boost that
+  // mouse users get from :hover on the crack stage directly.
+  trigger.addEventListener('focus',showHoverBoost);
+  trigger.addEventListener('blur',hideHoverBoost);
+
+  if(stage){
+    stage.addEventListener('click',()=>{
+      if(lairState==='revealed'){
+        // click 2 ("взрыв") lands in a later phase
+      }
+    });
+  }
 })();
 
 /* Фоновые цифры */
