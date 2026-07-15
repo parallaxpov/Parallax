@@ -292,7 +292,7 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 /* Outline layers sit behind the colour layers by default (DOM order) and
    start hidden; they get promoted above everything (z-index, set in the
    .is-outlined active rule further down) for their "impact frame" beat */
-.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .15s ease}
+.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .25s ease}
 
 /* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
 #lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
@@ -362,17 +362,22 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 
 /* Click 2, stage 3: white impact flash — the "hit". Starts overlapping
    the colour flash's tail (no gap, per spec: back to back, not
-   sequential-with-a-pause), snaps to full white almost instantly, holds
-   a beat, cuts out. The outline ("impact frame") and burst rays both
-   fire right on the snap — see fireImpact() — so everything lands on the
-   same beat, on top of the white. */
+   sequential-with-a-pause), snaps to full white almost instantly, holds,
+   then declines. The outline ("impact frame") and burst rays both fire
+   right on the snap — see fireImpact() — so everything lands on the same
+   beat, on top of the white. Duration (.9s) is deliberately longer than
+   the burst rays' own animation (~0.55s + up to 90ms stagger = ~0.64s)
+   and the outline's fade-out (fadeImpact(), scheduled near the end of
+   this) — otherwise the white light cuts out while the black shapes are
+   still mid-animation, and they're left sitting on the dark background
+   for their remaining runtime, essentially invisible. */
 .lair-flash-white{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:11;
   background:radial-gradient(ellipse 70% 60% at 50% 62%,#fff 0%,rgba(255,255,255,.9) 45%,rgba(255,255,255,0) 78%)}
-.lair-flash-white.is-flashing{animation:lairFlashWhite .5s cubic-bezier(.1,.8,.2,1) forwards}
+.lair-flash-white.is-flashing{animation:lairFlashWhite .9s cubic-bezier(.16,.6,.2,1) forwards}
 @keyframes lairFlashWhite{
   0%{opacity:0}
-  8%{opacity:1}
-  30%{opacity:.94}
+  4.5%{opacity:1}
+  17%{opacity:.94}
   100%{opacity:0}
 }
 
@@ -1238,7 +1243,9 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   // when the screen goes white, like a fighting-game super-hit.
   const FLASH_DURATION_MS=1800;
   const WHITE_FLASH_OVERLAP_MS=150; // white flash starts this far before the colour flash's natural end
-  const WHITE_FLASH_SNAP_MS=40; // matches the 8% mark of lairFlashWhite's 0.5s keyframe
+  const WHITE_FLASH_DURATION_MS=900;
+  const WHITE_FLASH_SNAP_MS=40; // matches the ~4.5% mark of lairFlashWhite's keyframe
+  const IMPACT_FADE_LEAD_MS=250; // start fading the outline back out this far before the white flash itself is gone
 
   function fireFlash(){
     const flash=document.getElementById('lairFlash');
@@ -1265,6 +1272,15 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     }
   }
 
+  function fadeImpact(){
+    // The burst rays fade themselves out via their own keyframe, but the
+    // outline just sits at opacity:1 once shown — left alone, it lingers
+    // as barely-visible black-on-dark-background after the white flash
+    // is gone. Fade it back out in step with the white flash's own decline
+    // instead, so nothing outlives the light it depends on to be legible.
+    if(stage)stage.classList.remove('is-outlined');
+  }
+
   function crackExplode(){
     lairState='sparking';
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
@@ -1277,6 +1293,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
       setTimeout(()=>{
         fireWhiteFlash();
         setTimeout(fireImpact,WHITE_FLASH_SNAP_MS);
+        setTimeout(fadeImpact,WHITE_FLASH_DURATION_MS-IMPACT_FADE_LEAD_MS);
       },FLASH_DURATION_MS-WHITE_FLASH_OVERLAP_MS);
     },SPARK_DURATION_MS+120);
     // TODO next step: fade the footer, then mount #lair.
