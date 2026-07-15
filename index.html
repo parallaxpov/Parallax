@@ -281,6 +281,13 @@ footer{border-top:var(--bd);padding:36px 0}
 @keyframes lairTriggerIdle{0%,100%{transform:translate(0,0) scale(1)}22%{transform:translate(.4px,-.3px) scale(1.04)}48%{transform:translate(-.3px,.4px) scale(.97)}74%{transform:translate(.3px,.3px) scale(1.02)}}
 body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;animation:none!important}
 
+/* LAIR crack overlay — inline-embedded SVGs, hidden until phase 3 wires up the states */
+.lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center}
+.lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408}
+.lair-crack-branches{position:absolute;inset:0}
+.lair-crack-core{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
+.lair-crack-branches svg,.lair-crack-core svg{display:block;width:100%;height:100%;overflow:visible}
+
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
 .fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
@@ -674,6 +681,12 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
       </div>
     </div>
   </div>
+  <div class="lair-crack-overlay" id="lairCrackOverlay" aria-hidden="true">
+    <div class="lair-crack-stage" id="lairCrackStage">
+      <div class="lair-crack-branches" id="lairCrackBranches"></div>
+      <div class="lair-crack-core" id="lairCrackCore"></div>
+    </div>
+  </div>
 </footer>
 
 <!-- LAIR — заглушка. Контент и переход добавляются отдельной фазой. -->
@@ -900,6 +913,25 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   }
   btn.addEventListener('click',()=>{on=!on;localStorage.setItem('prx-fx',on?'on':'off');apply();});
   apply();
+})();
+
+/* ── LAIR crack SVGs — inline embed for direct path/id access ── */
+(function(){
+  const coreHost=document.getElementById('lairCrackCore');
+  const branchesHost=document.getElementById('lairCrackBranches');
+  if(!coreHost||!branchesHost)return;
+  function loadSvg(url,host){
+    fetch(url).then(r=>{
+      if(!r.ok)throw new Error('HTTP '+r.status+' for '+url);
+      return r.text();
+    }).then(svgText=>{
+      host.innerHTML=svgText;
+    }).catch(err=>{
+      console.error('[lair] failed to load',url,err);
+    });
+  }
+  loadSvg('assets/crack-core.svg',coreHost);
+  loadSvg('assets/crack-branches.svg',branchesHost);
 })();
 
 /* Фоновые цифры */
