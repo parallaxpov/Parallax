@@ -292,7 +292,7 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 /* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
 #lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
 #lairCrackCore svg.crack-reveal path{opacity:1;transform:scale(1)}
-.lair-crack-branches g[id^="branch-"].branch-draw line{transition:stroke-dashoffset .28s ease;transition-delay:calc(var(--branch-i,0) * .18s)}
+.lair-crack-branches g[id^="branch-"].branch-draw line:not(.branch-charge):not(.branch-spark){transition:stroke-dashoffset .28s ease;transition-delay:calc(var(--branch-i,0) * .18s)}
 
 /* Charge copy per branch — brighter clone frozen mid-draw, reused below
    both as the idle "ghost double" flicker and as raw material for the
@@ -331,6 +331,12 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-crack-stage.is-hover-boost .branch-charge{opacity:.5!important;animation-play-state:paused}
 .lair-crack-stage.is-revealed:hover #lairCrackCore svg,
 .lair-crack-stage.is-hover-boost #lairCrackCore svg{filter:brightness(1.25);animation-play-state:paused}
+
+/* Click 2 — "взрыв", stage 1: a bright spark chases outward (center -> tip)
+   along every branch at once, small dash + large gap so only one point of
+   light is visible per line segment while it travels */
+.branch-spark{opacity:0;stroke:#fff;stroke-width:2.5px;filter:brightness(2.2) drop-shadow(0 0 6px #fff);pointer-events:none}
+.lair-crack-branches.is-sparking .branch-spark{opacity:1;transition:stroke-dashoffset .55s cubic-bezier(.3,0,.7,1)}
 
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
@@ -1078,12 +1084,71 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     },REVEAL_TOTAL_MS);
   }
 
+  // Click 2, stage 1 — a bright spark chases outward along every branch
+  // at once. Each line gets its own dash-chase clone: a small bright dash
+  // with a gap bigger than the segment itself, so only one point of light
+  // is visible, animated from hidden-at-the-inner-end to hidden-past-the-
+  // outer-end. NOTE: individual segments' own x1/y1->x2/y2 point order
+  // isn't guaranteed to run inner->outer (the source SVG has no consistent
+  // winding), so a handful of segments may visibly run "backwards" — left
+  // as a known simplification since the effect is brief and per-segment,
+  // easy to special-case later if it reads as wrong once seen in motion.
+  const SPARK_DURATION_MS=550;
+  function buildSparkClones(){
+    const svg=document.querySelector('#lairCrackBranches svg');
+    if(!svg)return;
+    for(let i=1;i<=11;i++){
+      const g=svg.querySelector('#branch-'+i);
+      if(!g||g.querySelector('.branch-spark'))continue; // built already
+      g.querySelectorAll('line:not(.branch-charge)').forEach(line=>{
+        const clone=line.cloneNode();
+        clone.classList.add('branch-spark');
+        const len=line.getTotalLength();
+        const dash=Math.max(4,len*0.14);
+        clone.style.strokeDasharray=dash+' '+(len*2);
+        // With dasharray "dash gap", the painted window sits at path-position
+        // -dashoffset (mod period). Starting at dashoffset=+dash puts the
+        // window just before position 0 (hidden, inner end); animating down
+        // to dashoffset=-len slides it past position `len` (hidden again,
+        // outer end) — so it sweeps the whole segment inner -> outer on the
+        // way. (An earlier version animated len+dash -> 0, which only ever
+        // grazes the very ends of the segment instead of sweeping through it.)
+        clone.style.strokeDashoffset=dash;
+        clone.dataset.sparkEnd=-len;
+        g.appendChild(clone);
+      });
+    }
+  }
+  function fireSpark(){
+    const branchesEl=document.getElementById('lairCrackBranches');
+    const svg=branchesEl?branchesEl.querySelector('svg'):null;
+    if(!svg)return;
+    buildSparkClones();
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        branchesEl.classList.add('is-sparking');
+        svg.querySelectorAll('.branch-spark').forEach(line=>{
+          line.style.strokeDashoffset=line.dataset.sparkEnd;
+        });
+      });
+    });
+  }
+
+  function crackExplode(){
+    lairState='sparking';
+    if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
+    fireSpark();
+    // TODO next step: once the spark reaches the tips (SPARK_DURATION_MS
+    // out), fade in the outline SVGs, fire the flash, flick on the burst
+    // rays, fade the footer, then mount #lair.
+  }
+
   function onTriggerActivate(){
     if(lairState==='idle'){
       lairState='cracking';
       crackOpen();
     } else if(lairState==='revealed'){
-      // click 2 ("взрыв") lands in a later phase
+      crackExplode();
     }
   }
 
@@ -1106,9 +1171,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
 
   if(stage){
     stage.addEventListener('click',()=>{
-      if(lairState==='revealed'){
-        // click 2 ("взрыв") lands in a later phase
-      }
+      if(lairState==='revealed')crackExplode();
     });
   }
 })();
