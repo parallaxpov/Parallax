@@ -734,7 +734,6 @@ function applyLang(l){
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(t[k]!==undefined)el.textContent=t[k];});
   document.getElementById('langToggle').textContent=l==='ru'?'EN':'RU';
   document.documentElement.lang=l;
-  twActive=false;
   startTypewriter(t.hero_name,t.hero_pos);
 }
 document.getElementById('langToggle').addEventListener('click',()=>applyLang(lang==='ru'?'en':'ru'));
@@ -743,28 +742,36 @@ document.getElementById('langToggle').addEventListener('click',()=>applyLang(lan
 const statusOptions=['online','playing Minecraft','sleep(100)','developing','secret','offline','error','connection lost'];
 document.getElementById('statusVal').textContent=statusOptions[Math.floor(Math.random()*statusOptions.length)];
 
-/* Typewriter — один курсор */
+/* Typewriter — один курсор. Каждый новый запуск отменяет предыдущий
+   таймер/интервал, а не полагается на булев флаг: applyLang может
+   вызвать startTypewriter повторно (смена языка) пока предыдущая
+   анимация ещё не закончилась. */
 let twActive=false;
+let twTimer=null;
+let twInterval=null;
 function typeText(el,text,speed,cb){
   el.innerHTML='';let i=0;
   const cur=document.createElement('span');cur.className='cursor';el.appendChild(cur);
-  const ti=setInterval(()=>{
+  if(twInterval)clearInterval(twInterval);
+  twInterval=setInterval(()=>{
     if(i<text.length){el.insertBefore(document.createTextNode(text[i++]),cur);}
-    else{clearInterval(ti);if(cb)cb(cur);}
+    else{clearInterval(twInterval);twInterval=null;if(cb)cb(cur);}
   },speed);
 }
 function startTypewriter(name,pos){
-  if(twActive)return;twActive=true;
+  if(twTimer)clearTimeout(twTimer);
+  if(twInterval){clearInterval(twInterval);twInterval=null;}
+  twActive=true;
   const ne=document.getElementById('heroName'),pe=document.getElementById('heroPos');
   ne.innerHTML='';pe.innerHTML='';
-  setTimeout(()=>{
+  twTimer=setTimeout(()=>{
     typeText(ne,name,75,cur=>{
       cur.remove();
-      setTimeout(()=>{typeText(pe,pos,38,()=>{twActive=false;});},280);
+      twTimer=setTimeout(()=>{typeText(pe,pos,38,()=>{twActive=false;});},280);
     });
   },700);
 }
-window.addEventListener('load',()=>{applyLang('ru');twActive=false;startTypewriter(T.ru.hero_name,T.ru.hero_pos);});
+window.addEventListener('load',()=>{applyLang('ru');});
 
 /* CARAI */
 const caraiCard=document.getElementById('caraiCard');
