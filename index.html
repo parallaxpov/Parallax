@@ -281,12 +281,18 @@ footer{border-top:var(--bd);padding:36px 0}
 @keyframes lairTriggerIdle{0%,100%{transform:translate(0,0) scale(1)}22%{transform:translate(.4px,-.3px) scale(1.04)}48%{transform:translate(-.3px,.4px) scale(.97)}74%{transform:translate(.3px,.3px) scale(1.02)}}
 body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;animation:none!important}
 
-/* LAIR crack overlay — inline-embedded SVGs, hidden until phase 3 wires up the states */
-.lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center}
+/* LAIR crack overlay — inline-embedded SVGs, hidden until the trigger fires */
+.lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
+.lair-crack-overlay.is-open{opacity:1;visibility:visible}
 .lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408}
 .lair-crack-branches{position:absolute;inset:0}
 .lair-crack-core{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
 .lair-crack-branches svg,.lair-crack-core svg{display:block;width:100%;height:100%;overflow:visible}
+
+/* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
+#lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
+#lairCrackCore svg.crack-reveal path{opacity:1;transform:scale(1)}
+.lair-crack-branches g[id^="branch-"].branch-draw line{transition:stroke-dashoffset .28s ease;transition-delay:calc(var(--branch-i,0) * .18s)}
 
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
@@ -939,6 +945,81 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   }
   loadSvg('assets/crack-core.svg',coreHost);
   loadSvg('assets/crack-branches.svg',branchesHost);
+})();
+
+/* ── LAIR crack states — click 1 "надрыв" ── */
+(function(){
+  const trigger=document.getElementById('lairTrigger');
+  const overlay=document.getElementById('lairCrackOverlay');
+  if(!trigger||!overlay)return;
+
+  let lairState='idle'; // idle -> cracked -> (later phases) charged -> exploded
+  let lairModulePromise=null;
+
+  function revealCore(){
+    const svg=document.querySelector('#lairCrackCore svg');
+    if(!svg)return;
+    const paths=Array.from(svg.querySelectorAll('path'));
+    paths.map(p=>({p,y:p.getBBox().y}))
+      .sort((a,b)=>a.y-b.y)
+      .forEach((item,i)=>item.p.style.setProperty('--strip-i',i));
+    svg.classList.add('crack-reveal');
+  }
+
+  function traceBranches(){
+    const svg=document.querySelector('#lairCrackBranches svg');
+    if(!svg)return;
+    const groups=[];
+    for(let i=1;i<=11;i++){
+      const g=svg.querySelector('#branch-'+i);
+      if(g)groups.push(g);
+    }
+    groups.forEach((g,i)=>{
+      g.style.setProperty('--branch-i',i);
+      g.querySelectorAll('line').forEach(line=>{
+        const len=line.getTotalLength();
+        line.style.strokeDasharray=len;
+        line.style.strokeDashoffset=len;
+      });
+    });
+    // The transition is scoped to .branch-draw so it's inert while we set
+    // the initial hidden offset above (otherwise that very first assignment
+    // — the implicit 0 -> len jump — gets transitioned too, and immediately
+    // reversing it back to 0 collides with that still-running transition).
+    // A double rAF guarantees the hidden (offset=len) state gets painted at
+    // least once before .branch-draw switches the transition on and the
+    // offset flips to 0, so the reveal animates from the right starting point.
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        groups.forEach(g=>{
+          g.classList.add('branch-draw');
+          g.querySelectorAll('line').forEach(line=>{line.style.strokeDashoffset='0';});
+        });
+      });
+    });
+  }
+
+  function crackOpen(){
+    overlay.classList.add('is-open');
+    revealCore();
+    traceBranches();
+    lairModulePromise=import('./lair.js').catch(err=>{
+      console.error('[lair] chunk load failed',err);
+    });
+  }
+
+  function onTriggerActivate(){
+    if(lairState==='idle'){
+      lairState='cracked';
+      crackOpen();
+    }
+    // click 2 ("взрыв") and beyond land in a later phase
+  }
+
+  trigger.addEventListener('click',onTriggerActivate);
+  trigger.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();onTriggerActivate();}
+  });
 })();
 
 /* Фоновые цифры */
