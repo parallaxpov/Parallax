@@ -372,12 +372,12 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-flash-white{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:11;
   transform-origin:50% 100%;transform:scaleY(.3);
   background:linear-gradient(to top,#fff 0%,rgba(255,255,255,.92) 38%,rgba(255,255,255,.5) 68%,transparent 100%)}
-.lair-flash-white.is-flashing{animation:lairFlashWhite .75s cubic-bezier(.16,.7,.2,1) forwards}
+.lair-flash-white.is-flashing{animation:lairFlashWhite .9s cubic-bezier(.16,.7,.2,1) forwards}
 @keyframes lairFlashWhite{
   0%{opacity:0;transform:scaleY(.3)}
-  10%{opacity:1;transform:scaleY(.85)}
-  20%{opacity:1;transform:scaleY(1)}
-  53%{opacity:.95;transform:scaleY(1.04)}
+  8%{opacity:1;transform:scaleY(.85)}
+  17%{opacity:1;transform:scaleY(1)}
+  61%{opacity:.95;transform:scaleY(1.04)}
   100%{opacity:0;transform:scaleY(1.15)}
 }
 
@@ -1243,17 +1243,17 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   // frame") and burst rays both fire on the white flash's snap, not the
   // colour flash's — that's the whole point, contour+rays land exactly
   // when the screen goes white, like a fighting-game super-hit.
-  const FLASH_DURATION_MS=1800;
+  const FLASH_DURATION_MS=1350; // 1800 * .75 — colour flash trimmed by 25%
   const WHITE_FLASH_OVERLAP_MS=150; // white flash starts this far before the colour flash's natural end
-  // Three-beat structure inside the white flash (.75s, see the
+  // Three-beat structure inside the white flash (.9s, see the
   // lairFlashWhite keyframe), game hit-flash style:
   // white alone (brief) -> impact frame pops in and holds a bit longer
   // than that solo beat -> both fade out together at the end. The white
-  // flash's own keyframe (20%/53% marks of 750ms) is shaped to match
+  // flash's own keyframe (17%/61% marks of 900ms) is shaped to match
   // these same offsets, so the light's rise/hold/decline lines up with
   // the impact frame's own timeline instead of the two drifting apart.
   const IMPACT_SOLO_MS=150; // white shows alone before the impact frame appears
-  const IMPACT_FADE_START_MS=400; // impact + white begin fading out together here
+  const IMPACT_FADE_START_MS=550; // impact + white begin fading out together here — extended so the impact itself has time to actually register, not just the white flash
 
   function fireFlash(){
     const flash=document.getElementById('lairFlash');
