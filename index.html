@@ -267,9 +267,26 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .contact-handle{font-family:var(--mono);font-size:17px;color:var(--cyan);margin-bottom:4px}
 .contact-desc{font-size:13px;color:var(--text-mid)}
 
+/* LAIR — minimal placeholder, see the comment on the #lair element */
+#lair{padding:100px 0;border-top:var(--bd)}
+.lair-monitors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+.lair-monitor{position:relative;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;overflow:hidden;border:1px solid rgba(255,255,255,.08);text-align:center}
+.lair-monitor::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0px,rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px)}
+.lair-monitor-red{background:#2e0a0a;color:#ff6b6b}
+.lair-monitor-blue{background:#0a1530;color:#7ec8ff}
+.lair-monitor-label{position:absolute;top:12px;left:14px;font-family:var(--mono);font-size:11px;letter-spacing:.15em;opacity:.55}
+.lair-monitor-text{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:.08em}
+.lair-monitor-sub{font-family:var(--mono);font-size:12px;opacity:.65}
+
 /* FOOTER */
 footer{border-top:var(--bd);padding:36px 0}
-.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;transition:opacity .4s ease,transform .4s ease}
+/* Click 2, final stage: footer exit — variant B (fade + drop), timed to
+   happen while the white flash is bright enough to hide the transition.
+   TODO follow-up: shatter into fragments instead of a plain fade, per
+   the original spec ("без нарезки на осколки — делаем позже") — this is
+   the placeholder. */
+footer.is-hiding .footer-inner{opacity:0;transform:translateY(14px)}
 .footer-log{font-family:var(--mono);font-size:13px;color:var(--text-dim);line-height:2.2}
 .footer-log .ok{color:#22c55e}.footer-log .warn{color:#f59e0b}
 .footer-copy{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-align:right;line-height:2}
@@ -810,8 +827,30 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   </div>
 </footer>
 
-<!-- LAIR — заглушка. Контент и переход добавляются отдельной фазой. -->
-<section id="lair" hidden aria-hidden="true"></section>
+<!-- LAIR — minimal placeholder revealed after the crack sequence finishes.
+     Real content (interactivity, narrative, whatever the den actually is)
+     is a later phase — this is just visual proof the transition + mount
+     works: mount() in lair.js un-hides this, nothing more. -->
+<section id="lair" hidden aria-hidden="true">
+  <div class="container">
+    <div class="section-label">// 0x00 — <span>логово</span></div>
+    <div class="lair-monitors">
+      <div class="lair-monitor lair-monitor-red">
+        <div class="lair-monitor-label">SYS_0x01</div>
+        <div class="lair-monitor-text">ERROR</div>
+      </div>
+      <div class="lair-monitor lair-monitor-blue">
+        <div class="lair-monitor-label">SYS_0x02</div>
+        <div class="lair-monitor-text">Технические неполадки</div>
+        <div class="lair-monitor-sub"><s>опять винду переустанавливать</s></div>
+      </div>
+      <div class="lair-monitor lair-monitor-red">
+        <div class="lair-monitor-label">SYS_0x03</div>
+        <div class="lair-monitor-text">ERROR</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <script>
 const T={
@@ -1254,6 +1293,8 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   // the impact frame's own timeline instead of the two drifting apart.
   const IMPACT_SOLO_MS=150; // white shows alone before the impact frame appears
   const IMPACT_FADE_START_MS=550; // impact + white begin fading out together here — extended so the impact itself has time to actually register, not just the white flash
+  const WHITE_FLASH_DURATION_MS=900; // matches the lairFlashWhite keyframe's own duration
+  const LAIR_MOUNT_BUFFER_MS=150; // small buffer after the white flash is fully gone before mounting #lair
 
   function fireFlash(){
     const flash=document.getElementById('lairFlash');
@@ -1293,6 +1334,23 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     if(host)host.classList.add('is-fading');
   }
 
+  function fadeFooter(){
+    // Same beat as fireImpact() — the fade is meant to happen while the
+    // white flash is bright enough to hide it, not be visible on its own.
+    const footerEl=document.querySelector('footer');
+    if(footerEl)footerEl.classList.add('is-hiding');
+  }
+
+  function mountLair(){
+    if(!lairModulePromise)return;
+    lairModulePromise.then(mod=>{
+      if(mod&&typeof mod.mount==='function')mod.mount();
+      lairState='mounted';
+    }).catch(err=>{
+      console.error('[lair] mount failed',err);
+    });
+  }
+
   function crackExplode(){
     lairState='sparking';
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
@@ -1306,9 +1364,16 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
         fireWhiteFlash();
         setTimeout(fireImpact,IMPACT_SOLO_MS);
         setTimeout(fadeImpact,IMPACT_FADE_START_MS);
+        setTimeout(fadeFooter,IMPACT_SOLO_MS);
+        // #lair mounts once the longest animation (the white flash) has
+        // fully finished, plus a small buffer — matches the spec's
+        // "по завершении самой долгой анимации" via a padded timeout
+        // rather than animationend (simpler to keep in sync given
+        // several elements with slightly different transition lengths
+        // all need to be done, not just one).
+        setTimeout(mountLair,WHITE_FLASH_DURATION_MS+LAIR_MOUNT_BUFFER_MS);
       },FLASH_DURATION_MS-WHITE_FLASH_OVERLAP_MS);
     },SPARK_DURATION_MS+120);
-    // TODO next step: fade the footer, then mount #lair.
   }
 
   function onTriggerActivate(){
