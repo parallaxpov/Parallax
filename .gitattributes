@@ -1,0 +1,8 @@
+# Treat Office documents as binary — prevents git from ever attempting
+# line-ending normalization on them, which silently corrupts the zip
+# container of .xlsx/.docx/.pptx files.
+*.xlsx binary
+*.xls binary
+*.docx binary
+*.pptx binary
+*.pdf binary
