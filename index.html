@@ -291,11 +291,18 @@ footer{border-top:var(--bd);padding:36px 0}
 footer.is-hiding .footer-inner{opacity:0;transform:translateY(14px)}
 /* Shatter: the real footer content + its border hide instantly (under the
    white flash) and a set of clipped clones of it fly apart instead. */
-footer.is-shattered{border-top-color:transparent}
+/* z-index 2: falling shards must stay above #lair (z 1, later in the DOM) */
+footer.is-shattered{border-top-color:transparent;z-index:2}
 footer.is-shattered>.container{visibility:hidden}
 .footer-shards{position:absolute;left:0;pointer-events:none;z-index:4}
 .footer-shard{position:absolute;inset:0;box-sizing:border-box;background:var(--bg);will-change:transform,opacity}
-.footer-shard>.container{animation:shardRgb .7s ease-out forwards}
+/* One shard's copy of the whole broken surface (#contacts + footer). The
+   copy must be a still frame: no glitch/idle animations or transitions
+   restarting inside it. */
+.shard-tpl{position:absolute;inset:0;animation:shardRgb .7s ease-out forwards}
+.shard-tpl *{animation:none!important;transition:none!important}
+#contacts.is-shattered>.container{visibility:hidden}
+#contacts.is-hiding>.container{opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease}
 @keyframes shardRgb{
   0%{text-shadow:-3px 0 rgba(229,57,53,.85),3px 0 rgba(0,229,204,.85)}
   100%{text-shadow:0 0 transparent,0 0 transparent}
@@ -430,6 +437,22 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
   100%{opacity:0;filter:brightness(3);transform:scale(1.12)}
 }
 
+/* Contacts drawer — after the lair opens, #contacts is gone (it broke
+   together with the footer), so the nav's "Контакты" opens this instead,
+   holding the very same contact cards (moved here, not copied). */
+.contacts-drawer{position:fixed;top:64px;right:16px;z-index:101;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow:auto;
+  padding:18px;background:rgba(12,7,22,.96);backdrop-filter:blur(14px);border:1px solid rgba(236,72,153,.28);box-shadow:0 0 32px rgba(139,92,246,.22);
+  opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .25s ease,transform .25s ease,visibility 0s linear .25s}
+.contacts-drawer.is-open{opacity:1;visibility:visible;transform:none;transition:opacity .25s ease,transform .25s ease,visibility 0s}
+.cd-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:rgba(236,72,153,.75)}
+.cd-close{background:none;border:0;color:var(--text-mid);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px}
+.cd-close:hover,.cd-close:focus-visible{color:var(--cyan)}
+.contacts-drawer .contacts-grid{grid-template-columns:1fr;gap:10px}
+.contacts-drawer .contact-card{padding:14px 16px}
+/* one-off nudge on the nav link when the contacts move up there */
+nav a.is-moved{animation:navMoved 1.1s ease-in-out 3}
+@keyframes navMoved{0%,100%{color:var(--text-mid);text-shadow:none}50%{color:#fff;text-shadow:0 0 10px rgba(236,72,153,.9),0 0 18px rgba(0,240,255,.5)}}
+
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
 .fx-toggle:hover{box-shadow:0 0 12px rgba(0,229,204,.2);border-color:var(--cyan)}
@@ -514,6 +537,10 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
     <button class="lang-toggle" id="langToggle">EN</button>
   </div>
 </nav>
+<aside class="contacts-drawer" id="contactsDrawer" aria-hidden="true">
+  <div class="cd-head"><span>// 06 — <span data-i18n="cont_label">контакты</span></span><button class="cd-close" id="contactsDrawerClose" aria-label="×">×</button></div>
+  <div class="cd-body" id="contactsDrawerBody"></div>
+</aside>
 
 <section id="hero">
   <div class="container">
@@ -1255,7 +1282,8 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   // rift's ember) originates here.
   const IMPACT_X=.5549,IMPACT_Y=.5497;
   const CHARGE_MS=650;           // colour "заряд" gathering at the core, peaks right at the hit
-  const LAIR_MOUNT_DELAY_MS=1100; // after the hit: white flash (1s) is gone by then
+  const LAIR_MOUNT_DELAY_MS=900; // after the hit: the white flash is mostly gone by then
+  const LAIR_GLIDE_MS=2000;      // slow eased scroll down to #lair — carried there, not yanked
   const reduceMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function placeAtImpact(el){
@@ -1312,7 +1340,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   const SHATTER_RING_START=58;   // px — radius of the first ring (small pieces near the impact)
   const SHATTER_RING_GROWTH=1.7; // each ring is this much farther out than the previous one
   const SHATTER_MAX_GAP_DEG=30;  // fill in extra radial cracks wherever branches leave a wider gap
-  const SHATTER_DURATION_MS=1800;
+  const SHATTER_DURATION_MS=2800; // long enough to still be drifting down while the page glides to #lair
   // Sutherland–Hodgman: clip a convex-ish polygon to the footer's box, so
   // shard outlines (and hit area) never spill past the footer itself.
   function clipToRect(poly,W,H){
@@ -1335,21 +1363,29 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     });
     return out;
   }
-  function impactInFooter(footerEl){
+  // The surface that breaks is #contacts + the footer, as one region.
+  // Coordinates are relative to the region's top-left; `top` is where that
+  // top sits relative to the footer's border-box (negative: above it).
+  function breakRegion(footerEl){
     const fr=footerEl.getBoundingClientRect();
+    const contacts=document.getElementById('contacts');
+    const top=contacts?Math.min(0,contacts.getBoundingClientRect().top-fr.top):0;
+    const W=fr.width,H=fr.height-top;
+    let cx=W/2,cy=H/2;
     const sr=stage?stage.getBoundingClientRect():null;
-    if(!sr||!sr.width)return [fr.width/2,fr.height/2];
-    return [sr.left+sr.width*IMPACT_X-fr.left,sr.top+sr.height*IMPACT_Y-fr.top];
+    if(sr&&sr.width){cx=sr.left+sr.width*IMPACT_X-fr.left;cy=sr.top+sr.height*IMPACT_Y-fr.top-top;}
+    return {top,W,H,cx,cy,contacts};
   }
 
-  // The lair's layer, laid under the footer's own box (border included).
+  // The lair's layer, laid under the whole broken region (positioned from
+  // inside the footer, so it paints over #contacts too).
   function openRift(footerEl,soft){
     if(footerEl.querySelector(':scope > .lair-rift'))return;
-    const [cx,cy]=impactInFooter(footerEl);
+    const g=breakRegion(footerEl);
     const rift=document.createElement('div');
     rift.className='lair-rift'+(soft?' is-soft':'');
     rift.setAttribute('aria-hidden','true');
-    rift.style.cssText=`top:${-footerEl.clientTop}px;width:${footerEl.offsetWidth}px;height:${footerEl.offsetHeight}px;--ix:${cx.toFixed(0)}px;--iy:${cy.toFixed(0)}px`;
+    rift.style.cssText=`top:${g.top-footerEl.clientTop}px;width:${g.W}px;height:${g.H}px;--ix:${g.cx.toFixed(0)}px;--iy:${g.cy.toFixed(0)}px`;
     footerEl.appendChild(rift);
   }
 
@@ -1358,9 +1394,8 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     const content=footerEl?footerEl.querySelector(':scope > .container'):null;
     if(!footerEl||!content)return false;
     const fr=footerEl.getBoundingClientRect();
-    const W=fr.width,H=fr.height;
+    const {top:regionTop,W,H,cx,cy,contacts}=breakRegion(footerEl);
     const cs=getComputedStyle(footerEl);
-    const [cx,cy]=impactInFooter(footerEl);
     // Radial cracks: one per crack branch, aimed at the branch's farthest
     // corner from the impact point (≈ its tip).
     const angles=[];
@@ -1369,7 +1404,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
       if(!r.width&&!r.height)return;
       let best=null,bestD=-1;
       [[r.left,r.top],[r.right,r.top],[r.left,r.bottom],[r.right,r.bottom]].forEach(([x,y])=>{
-        const dx=x-fr.left-cx,dy=y-fr.top-cy,d=dx*dx+dy*dy;
+        const dx=x-fr.left-cx,dy=y-fr.top-regionTop-cy,d=dx*dx+dy*dy;
         if(d>bestD){bestD=d;best=Math.atan2(dy,dx);}
       });
       angles.push(best);
@@ -1402,10 +1437,24 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     host.className='footer-shards';
     host.setAttribute('aria-hidden','true');
     const bw=footerEl.clientTop;
-    host.style.cssText=`top:${-bw}px;width:${W}px;height:${H}px`;
-    const tpl=content.cloneNode(true);
+    host.style.cssText=`top:${regionTop-bw}px;width:${W}px;height:${H}px`;
+    // Still frame of the region: #contacts on top, the footer below it,
+    // each with its own box styles copied inline (ids are stripped from
+    // the copies, and id-scoped rules like #contacts' padding go with them).
+    const tpl=document.createElement('div');
+    tpl.className='shard-tpl';
+    if(contacts){
+      const ccs=getComputedStyle(contacts);
+      const c=contacts.cloneNode(true);
+      c.style.cssText=`position:absolute;left:0;top:0;width:${W}px;margin:0;box-sizing:border-box;padding:${ccs.padding};border-top:${ccs.borderTopWidth} ${ccs.borderTopStyle} ${ccs.borderTopColor}`;
+      tpl.appendChild(c);
+    }
+    const f=document.createElement('div');
+    f.style.cssText=`position:absolute;left:0;top:${-regionTop}px;width:${W}px;box-sizing:border-box;padding:${cs.padding};border-top:${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+    f.appendChild(content.cloneNode(true));
+    tpl.appendChild(f);
     tpl.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
-    tpl.querySelectorAll('[tabindex],[role]').forEach(el=>{el.removeAttribute('tabindex');el.removeAttribute('role');});
+    tpl.querySelectorAll('a,[tabindex],[role]').forEach(el=>{el.removeAttribute('href');el.removeAttribute('tabindex');el.removeAttribute('role');});
     const svgNS='http://www.w3.org/2000/svg';
     const shards=[];
     for(let j=0;j<rays.length;j++){
@@ -1421,7 +1470,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
         const pts=poly.map(p=>p[0].toFixed(1)+'px '+p[1].toFixed(1)+'px').join(',');
         const el=document.createElement('div');
         el.className='footer-shard';
-        el.style.cssText=`border-top:${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor};padding:${cs.padding};clip-path:polygon(${pts});transform-origin:${mx.toFixed(1)}px ${my.toFixed(1)}px`;
+        el.style.cssText=`clip-path:polygon(${pts});transform-origin:${mx.toFixed(1)}px ${my.toFixed(1)}px`;
         el.appendChild(tpl.cloneNode(true));
         const edge=document.createElementNS(svgNS,'svg');
         edge.setAttribute('class','footer-shard-edge');
@@ -1436,6 +1485,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     openRift(footerEl,false);
     footerEl.appendChild(host);
     footerEl.classList.add('is-shattered');
+    if(contacts)contacts.classList.add('is-shattered');
 
     // Motion, in two phases: a fast outward burst away from the impact
     // point (harder for pieces close to it), then the pieces tumble and
@@ -1448,13 +1498,13 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
       const near=1-s.ring/rings; // 1 at the impact, → 0 at the edge
       const push=(60+Math.random()*120)*(.5+near);
       const tx=dx/d*push,ty=dy/d*push*.7;
-      const fall=90+Math.random()*130;
+      const fall=140+Math.random()*180;
       const rot=(Math.random()<.5?-1:1)*(10+Math.random()*30)*(.5+near);
       const delay=s.ring*20+Math.random()*40;
       s.el.animate([
         {transform:'none',opacity:1,easing:'cubic-bezier(.12,.7,.3,1)'},
         {transform:`translate(${tx}px,${ty}px) rotate(${rot*.55}deg)`,opacity:1,offset:.35,easing:'cubic-bezier(.45,0,.85,.55)'},
-        {transform:`translate(${tx*1.1}px,${ty+fall*.45}px) rotate(${rot*.8}deg)`,opacity:.9,offset:.7},
+        {transform:`translate(${tx*1.1}px,${ty+fall*.45}px) rotate(${rot*.8}deg)`,opacity:.85,offset:.6},
         {transform:`translate(${tx*1.2}px,${ty+fall}px) rotate(${rot}deg)`,opacity:0}
       ],{duration:SHATTER_DURATION_MS-delay,delay,fill:'forwards'});
     });
@@ -1463,16 +1513,51 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   }
 
   function exitFooter(){
-    if(!reduceMotion()&&shatterFooter())return;
-    fadeFooter();
-    const footerEl=document.querySelector('footer');
-    if(footerEl)openRift(footerEl,true);
+    if(!(!reduceMotion()&&shatterFooter())){
+      fadeFooter();
+      const contacts=document.getElementById('contacts');
+      if(contacts)contacts.classList.add('is-hiding');
+      const footerEl=document.querySelector('footer');
+      if(footerEl)openRift(footerEl,true);
+    }
+    enableContactsDrawer();
   }
+
+  // ---- Contacts drawer: the contact cards move from the (now broken)
+  // #contacts section into a drawer that the nav's "Контакты" opens.
+  const drawer=document.getElementById('contactsDrawer');
+  function setDrawer(open){
+    if(!drawer)return;
+    drawer.classList.toggle('is-open',open);
+    drawer.setAttribute('aria-hidden',open?'false':'true');
+  }
+  function enableContactsDrawer(){
+    const grid=document.querySelector('#contacts .contacts-grid');
+    const body=document.getElementById('contactsDrawerBody');
+    if(!drawer||!grid||!body||document.body.classList.contains('lair-open'))return;
+    body.appendChild(grid);
+    document.body.classList.add('lair-open');
+    // After the page has glided down, point at where the contacts went.
+    setTimeout(()=>{
+      document.querySelectorAll('nav a[href="#contacts"]').forEach(a=>a.classList.add('is-moved'));
+    },LAIR_MOUNT_DELAY_MS+LAIR_GLIDE_MS);
+  }
+  document.addEventListener('click',e=>{
+    if(!document.body.classList.contains('lair-open'))return;
+    const link=e.target.closest('a[href="#contacts"]');
+    if(link){e.preventDefault();setDrawer(!drawer.classList.contains('is-open'));return;}
+    if(drawer&&drawer.classList.contains('is-open')){
+      if(e.target.closest('#contactsDrawerClose'))setDrawer(false);
+      else if(!drawer.contains(e.target))setDrawer(false);
+      else if(e.target.closest('.contact-card[href]'))setDrawer(false);
+    }
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setDrawer(false);});
 
   function mountLair(){
     if(!lairModulePromise)return;
     lairModulePromise.then(mod=>{
-      if(mod&&typeof mod.mount==='function')mod.mount();
+      if(mod&&typeof mod.mount==='function')mod.mount({glideMs:reduceMotion()?0:LAIR_GLIDE_MS});
       lairState='mounted';
     }).catch(err=>{
       console.error('[lair] mount failed',err);
