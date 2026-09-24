@@ -268,19 +268,50 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .contact-handle{font-family:var(--mono);font-size:17px;color:var(--cyan);margin-bottom:4px}
 .contact-desc{font-size:13px;color:var(--text-mid)}
 
-/* LAIR — minimal placeholder, see the comment on the #lair element */
+/* LAIR — the watch room: CCTV feeds, one per "room" of the lair */
 #lair{padding:100px 0;
   /* same surface as .lair-rift (footer shatter), continued from its bottom edge */
   background-color:var(--den-bg);background-image:linear-gradient(to bottom,rgba(139,92,246,.08),transparent 360px),radial-gradient(rgba(236,72,153,.13) 1px,transparent 1.6px);
   background-size:100% 100%,24px 24px;background-position:0 0,center top}
-.lair-monitors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
-.lair-monitor{position:relative;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;overflow:hidden;border:1px solid rgba(255,255,255,.08);text-align:center}
-.lair-monitor::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0px,rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px)}
-.lair-monitor-red{background:#2e0a0a;color:#ff6b6b}
-.lair-monitor-blue{background:#0a1530;color:#7ec8ff}
-.lair-monitor-label{position:absolute;top:12px;left:14px;font-family:var(--mono);font-size:11px;letter-spacing:.15em;opacity:.55}
-.lair-monitor-text{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:.08em}
-.lair-monitor-sub{font-family:var(--mono);font-size:12px;opacity:.65}
+#lair .section-label{margin-bottom:14px}
+.lair-post{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:rgba(236,72,153,.7);margin-bottom:40px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lair-post .lp-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:recBlink 2.4s steps(1) infinite}
+.lair-monitors{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px}
+.lair-feed{margin:0}
+.feed-screen{position:relative;aspect-ratio:4/3;overflow:hidden;background:#05030a;border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 0 0 4px #0a0712,0 0 0 5px rgba(236,72,153,.18),0 12px 32px rgba(0,0,0,.5);transition:box-shadow .3s ease}
+.feed-screen img{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;filter:saturate(.7) contrast(1.08) brightness(.82);
+  animation:feedDrift 22s ease-in-out infinite alternate;animation-delay:var(--feed-delay,0s)}
+/* slow "camera" drift, so the feeds never sit perfectly still */
+@keyframes feedDrift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-3%,-2%) scale(1.04)}}
+/* scanlines + vignette + rolling brightness band */
+.feed-screen::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0px,rgba(0,0,0,.22) 1px,transparent 1px,transparent 3px);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.75)}
+.feed-screen::after{content:'';position:absolute;left:0;right:0;height:30%;top:-30%;z-index:2;pointer-events:none;
+  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.05),transparent);animation:feedRoll 7s linear infinite;animation-delay:var(--feed-delay,0s)}
+@keyframes feedRoll{0%{top:-30%}100%{top:100%}}
+/* film grain */
+.feed-grain{position:absolute;inset:-50%;z-index:2;pointer-events:none;opacity:.12;mix-blend-mode:screen;animation:feedGrain .9s steps(6) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes feedGrain{0%{transform:translate(0,0)}20%{transform:translate(-8%,4%)}40%{transform:translate(6%,-6%)}60%{transform:translate(-4%,8%)}80%{transform:translate(8%,2%)}100%{transform:translate(0,0)}}
+/* rare signal glitch */
+.feed-screen.is-glitching img{animation:feedGlitch .35s steps(3) 1,feedDrift 22s ease-in-out infinite alternate}
+@keyframes feedGlitch{0%{filter:saturate(.7) contrast(1.08) brightness(.82);clip-path:none}33%{filter:hue-rotate(40deg) saturate(1.6) brightness(1.1);clip-path:inset(18% 0 52% 0);transform:translateX(3%)}66%{filter:saturate(.3) brightness(1.3);clip-path:inset(60% 0 10% 0);transform:translateX(-2%)}100%{filter:saturate(.7) contrast(1.08) brightness(.82);clip-path:none}}
+/* on-screen display */
+.feed-osd{position:absolute;inset:0;z-index:3;pointer-events:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(255,255,255,.82);text-shadow:0 0 4px rgba(0,0,0,.9)}
+.feed-osd>*{position:absolute}
+.feed-rec{top:10px;left:12px;color:#ff4d4d}
+.feed-rec i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff3b3b;margin-right:6px;box-shadow:0 0 6px #ff3b3b;animation:recBlink 1.2s steps(1) infinite}
+@keyframes recBlink{0%{opacity:1}50%{opacity:.15}}
+.feed-cam{top:10px;right:12px}
+.feed-time{bottom:10px;left:12px}
+.feed-screen:hover{box-shadow:0 0 0 4px #0a0712,0 0 0 5px rgba(0,240,255,.35),0 0 24px rgba(0,240,255,.15),0 12px 32px rgba(0,0,0,.5)}
+.lair-feed figcaption{margin-top:14px;display:flex;flex-direction:column;gap:3px}
+.feed-sector{font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:#e9d5ff}
+.feed-sub{font-family:var(--mono);font-size:12px;color:rgba(236,72,153,.65);letter-spacing:.08em}
+@media (prefers-reduced-motion: reduce){.feed-screen img,.feed-screen::after,.feed-grain,.lair-post .lp-dot,.feed-rec i{animation:none!important}}
+body.fx-off .feed-grain,body.fx-off .feed-screen::after{display:none}
 
 /* FOOTER */
 footer{border-top:var(--bd);padding:36px 0}
@@ -860,27 +891,38 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   </div>
 </footer>
 
-<!-- LAIR — minimal placeholder revealed after the crack sequence finishes.
-     Real content (interactivity, narrative, whatever the den actually is)
-     is a later phase — this is just visual proof the transition + mount
-     works: mount() in lair.js un-hides this, nothing more. -->
+<!-- LAIR — the watch room ("пост наблюдения"): revealed after the crack
+     sequence (mount() in lair.js). Each CCTV feed looks into one room of
+     the lair; entering the rooms is the next phase (see PLAN.md). -->
 <section id="lair" hidden aria-hidden="true">
   <div class="container">
-    <div class="section-label">// 0x00 — <span>логово</span></div>
+    <div class="section-label">// 0x00 — <span data-i18n="lair_label">логово</span></div>
+    <div class="lair-post"><span class="lp-dot"></span>WATCH ROOM · <span data-i18n="lair_post">пост наблюдения</span> · 3 FEEDS ONLINE</div>
     <div class="lair-monitors">
-      <div class="lair-monitor lair-monitor-red">
-        <div class="lair-monitor-label">SYS_0x01</div>
-        <div class="lair-monitor-text">ERROR</div>
-      </div>
-      <div class="lair-monitor lair-monitor-blue">
-        <div class="lair-monitor-label">SYS_0x02</div>
-        <div class="lair-monitor-text">Технические неполадки</div>
-        <div class="lair-monitor-sub"><s>уведомление</s></div>
-      </div>
-      <div class="lair-monitor lair-monitor-red">
-        <div class="lair-monitor-label">SYS_0x03</div>
-        <div class="lair-monitor-text">ERROR</div>
-      </div>
+      <figure class="lair-feed">
+        <div class="feed-screen" style="--feed-delay:0s">
+          <img src="assets/lair/feed-blindspot.webp" alt="" loading="lazy">
+          <div class="feed-grain"></div>
+          <div class="feed-osd"><span class="feed-rec"><i></i>REC</span><span class="feed-cam">CAM_01</span><span class="feed-time" data-feed-clock>--</span></div>
+        </div>
+        <figcaption><span class="feed-sector">SECTOR 0x01 — BLIND SPOT</span><span class="feed-sub" data-i18n="room_lab">лаборатория исследований</span></figcaption>
+      </figure>
+      <figure class="lair-feed">
+        <div class="feed-screen" style="--feed-delay:-7s">
+          <img src="assets/lair/feed-workshop.webp" alt="" loading="lazy">
+          <div class="feed-grain"></div>
+          <div class="feed-osd"><span class="feed-rec"><i></i>REC</span><span class="feed-cam">CAM_02</span><span class="feed-time" data-feed-clock>--</span></div>
+        </div>
+        <figcaption><span class="feed-sector">SECTOR 0x02 — WORKSHOP</span><span class="feed-sub" data-i18n="room_workshop">мастерская робототехника</span></figcaption>
+      </figure>
+      <figure class="lair-feed">
+        <div class="feed-screen" style="--feed-delay:-14s">
+          <img src="assets/lair/feed-render.webp" alt="" loading="lazy">
+          <div class="feed-grain"></div>
+          <div class="feed-osd"><span class="feed-rec"><i></i>REC</span><span class="feed-cam">CAM_03</span><span class="feed-time" data-feed-clock>--</span></div>
+        </div>
+        <figcaption><span class="feed-sector">SECTOR 0x03 — RENDER</span><span class="feed-sub" data-i18n="room_render">пространство 3D-художника</span></figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -902,7 +944,7 @@ status_5:'курс PT MaxPatrol Blue Team',status_6:'работа над про�
 log_1:'CARAI — разработка концепта и роадмап',log_2:'PT NAD — курс завершён',log_3:'Cognitive Phishing Inoculation — концепт и исследование',log_4:'PT MaxPatrol SIEM — курс завершён',log_5:'PT MaxPatrol Blue Team — курс в процессе',log_6:'RAD COP — проект в процессе',log_7:'серия статей на Habr — на доработке',
 skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',
 pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_icm:'InfoSec Career Map',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
-cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',si_open:'открыт к предложениям'},
+cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',lair_label:'логово',lair_post:'пост наблюдения',room_lab:'лаборатория исследований',room_workshop:'мастерская робототехника',room_render:'пространство 3D-художника',si_open:'открыт к предложениям'},
 en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',
 hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',
 hero_tagline:"I research what others prefer not to notice",hero_btn1:'Projects',hero_btn2:'Contacts',
@@ -918,7 +960,7 @@ status_5:'PT MaxPatrol Blue Team course',status_6:'working on projects (CARAI, R
 log_1:'CARAI concept development and roadmap',log_2:'PT NAD — course complete',log_3:'Cognitive phishing inoculation — concept & research',log_4:'PT MaxPatrol SIEM — course complete',log_5:'PT MaxPatrol Blue Team — course in progress',log_6:'RAD COP — project in progress',log_7:'Habr article series — in revision',
 skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',
 pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_icm:'InfoSec Career Map',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
-cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',si_open:'open to proposals'}};
+cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',lair_label:'the lair',lair_post:'observation post',room_lab:'research lab',room_workshop:'robotics workshop',room_render:'3D artist space',si_open:'open to proposals'}};
 
 let lang='ru';
 function applyLang(l){
