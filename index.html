@@ -32,6 +32,7 @@
   --den-cyan: #00f0ff;
   --den-magenta: #ec4899;
   --den-violet: #8b5cf6;
+  --den-bg: #0c0716;
 }
 
 #lair {
@@ -268,7 +269,10 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .contact-desc{font-size:13px;color:var(--text-mid)}
 
 /* LAIR — minimal placeholder, see the comment on the #lair element */
-#lair{padding:100px 0;border-top:var(--bd)}
+#lair{padding:100px 0;
+  /* same surface as .lair-rift (footer shatter), continued from its bottom edge */
+  background-color:var(--den-bg);background-image:linear-gradient(to bottom,rgba(139,92,246,.08),transparent 360px),radial-gradient(rgba(236,72,153,.13) 1px,transparent 1.6px);
+  background-size:100% 100%,24px 24px;background-position:0 0,center top}
 .lair-monitors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
 .lair-monitor{position:relative;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;overflow:hidden;border:1px solid rgba(255,255,255,.08);text-align:center}
 .lair-monitor::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0px,rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px)}
@@ -290,7 +294,26 @@ footer.is-hiding .footer-inner{opacity:0;transform:translateY(14px)}
 footer.is-shattered{border-top-color:transparent}
 footer.is-shattered>.container{visibility:hidden}
 .footer-shards{position:absolute;left:0;pointer-events:none;z-index:4}
-.footer-shard{position:absolute;inset:0;box-sizing:border-box;background:rgba(255,255,255,.012);will-change:transform,opacity}
+.footer-shard{position:absolute;inset:0;box-sizing:border-box;background:var(--bg);will-change:transform,opacity}
+.footer-shard>.container{animation:shardRgb .7s ease-out forwards}
+@keyframes shardRgb{
+  0%{text-shadow:-3px 0 rgba(229,57,53,.85),3px 0 rgba(0,229,204,.85)}
+  100%{text-shadow:0 0 transparent,0 0 transparent}
+}
+/* The lair's own layer, revealed behind the shards as they fly away and
+   continued seamlessly by #lair below — a different surface from the rest
+   of the site (own base colour, magenta dot grid instead of the cyan line
+   grid). --ix/--iy (set from JS) = impact point, where an ember glow stays. */
+.lair-rift{position:absolute;left:0;z-index:3;pointer-events:none;border-top:1px solid rgba(236,72,153,.28);
+  background-color:var(--den-bg);background-image:linear-gradient(to bottom,transparent,rgba(139,92,246,.08)),radial-gradient(rgba(236,72,153,.13) 1px,transparent 1.6px);
+  background-size:100% 100%,24px 24px;background-position:0 0,center bottom}
+.lair-rift::after{content:'';position:absolute;inset:0;animation:riftEmber 3s ease-out forwards;
+  background:radial-gradient(circle at var(--ix,50%) var(--iy,50%),rgba(0,240,255,.32) 0%,rgba(139,92,246,.16) 70px,rgba(236,72,153,.05) 160px,transparent 280px)}
+/* the ember cools down to a faint trace, so the rift ends up matching
+   #lair right below it (no visible seam at the footer's bottom edge) */
+@keyframes riftEmber{0%{opacity:1}100%{opacity:.18}}
+.lair-rift.is-soft{animation:riftIn .6s ease forwards}
+@keyframes riftIn{from{opacity:0}to{opacity:1}}
 .footer-shard-edge{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .footer-shard-edge polygon{fill:none;stroke:rgba(126,200,255,.32);stroke-width:1.5;stroke-linejoin:round}
 .footer-log{font-family:var(--mono);font-size:13px;color:var(--text-dim);line-height:2.2}
@@ -308,14 +331,9 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .lair-crack-overlay{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
 .lair-crack-overlay.is-open{opacity:1;visibility:visible}
 .lair-crack-stage{position:relative;width:min(640px,88%);aspect-ratio:735/408;pointer-events:none}
-.lair-crack-branches,.lair-crack-branches-outline{position:absolute;inset:0}
-.lair-crack-core,.lair-crack-core-outline{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
-.lair-crack-branches svg,.lair-crack-core svg,
-.lair-crack-branches-outline svg,.lair-crack-core-outline svg{display:block;width:100%;height:100%;overflow:visible}
-/* Outline layers sit behind the colour layers by default (DOM order) and
-   start hidden; they get promoted above everything (z-index, set in the
-   .is-outlined active rule further down) for their "impact frame" beat */
-.lair-crack-branches-outline,.lair-crack-core-outline{opacity:0;transition:opacity .25s ease}
+.lair-crack-branches{position:absolute;inset:0}
+.lair-crack-core{position:absolute;left:44.75%;top:40.15%;width:21.5%;height:29.66%}
+.lair-crack-branches svg,.lair-crack-core svg{display:block;width:100%;height:100%;overflow:visible}
 
 /* Click 1 — "надрыв": core strips fade/scale in top-to-bottom, branches trace outward */
 #lairCrackCore svg path{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);transition:opacity .22s ease,transform .22s ease;transition-delay:calc(var(--strip-i,0) * 10ms)}
@@ -366,66 +384,51 @@ body.fx-off .lair-trigger{opacity:0!important;pointer-events:none!important;anim
 .branch-spark{opacity:0;stroke:#fff;stroke-width:2.5px;filter:brightness(2.2) drop-shadow(0 0 6px #fff);pointer-events:none}
 .lair-crack-branches.is-sparking .branch-spark{opacity:1;transition:stroke-dashoffset .55s cubic-bezier(.3,0,.7,1)}
 
-/* Click 2, stage 2: colour flash — gradient sheet blooming up from the
-   bottom edge, dissipating as it rises. Runs long enough (1.8s) to
-   actually register before the white impact flash cuts in right after
-   it — that's the "windup", not the hit. */
-.lair-flash{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:10;transform-origin:50% 100%;transform:scaleY(.3);
-  /* the crack itself (and the burst rays further still) overflow well
-     beyond the footer's own box in every direction, so the flash needs
-     the same generous margin or it only washes out a slice of the middle */
-  background:linear-gradient(to top,rgba(255,255,255,.95) 0%,rgba(0,240,255,.55) 32%,rgba(139,92,246,.28) 60%,transparent 100%)}
-.lair-flash.is-flashing{animation:lairFlash 1.8s cubic-bezier(.16,1,.3,1) forwards}
-@keyframes lairFlash{
-  0%{opacity:0;transform:scaleY(.3)}
-  15%{opacity:1;transform:scaleY(1.02)}
-  55%{opacity:.88;transform:scaleY(1.08)}
-  100%{opacity:0;transform:scaleY(1.25)}
+/* Click 2 — one light source for the whole hit: the impact point at the
+   crack's core (both layers are positioned there from JS, see
+   placeAtImpact()), spreading out in every direction.
+   Stage 2, "заряд": a palette-coloured glow gathers at the core,
+   accelerating, while the crack itself brightens and trembles.
+   Stage 3, the hit: at the charge's peak the white flash takes over from
+   the very same point — it starts already bright and small and expands
+   out of the colour glow, so there's no dark gap between the two. */
+.lair-charge,.lair-flash-white{position:absolute;left:50%;top:50%;border-radius:50%;pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.1)}
+.lair-charge{width:170vmax;height:170vmax;z-index:10;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(0,240,255,.6) 7%,rgba(139,92,246,.38) 22%,rgba(236,72,153,.16) 40%,transparent 65%)}
+.lair-charge.is-charging{animation:lairCharge var(--charge-ms,650ms) cubic-bezier(.55,0,.9,.5) forwards}
+@keyframes lairCharge{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.08)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(.75)}
 }
-
-/* Click 2, stage 3: white impact flash — the "hit". Starts overlapping
-   the colour flash's tail (no gap, per spec: back to back, not
-   sequential-with-a-pause). Same bottom-up sweep shape as the colour
-   flash (not a radial burst — that read as a different, mismatched
-   effect), just white instead of tinted. Timeline: rises alone first
-   (brief — no impact yet), holds while the impact frame pops in on top
-   of it and stays a bit longer than that initial solo beat, then both
-   decline together at the end — see fireImpact()/fadeImpact() below,
-   which are scheduled to land on this same curve. */
-.lair-flash-white{position:absolute;top:-260px;bottom:-260px;left:-200px;right:-200px;opacity:0;pointer-events:none;z-index:11;
-  transform-origin:50% 100%;transform:scaleY(.3);
-  background:linear-gradient(to top,#fff 0%,rgba(255,255,255,.92) 38%,rgba(255,255,255,.5) 68%,transparent 100%)}
-.lair-flash-white.is-flashing{animation:lairFlashWhite .9s cubic-bezier(.16,.7,.2,1) forwards}
+.lair-charge.is-released{animation:lairChargeRelease .45s ease-out forwards}
+@keyframes lairChargeRelease{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.75)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}
+}
+.lair-flash-white{width:300vmax;height:300vmax;z-index:11;
+  background:radial-gradient(circle,#fff 0%,#fff 12%,rgba(255,255,255,.92) 22%,rgba(220,250,255,.55) 38%,transparent 62%)}
+.lair-flash-white.is-flashing{animation:lairFlashWhite 1s forwards}
 @keyframes lairFlashWhite{
-  0%{opacity:0;transform:scaleY(.3)}
-  8%{opacity:1;transform:scaleY(.85)}
-  17%{opacity:1;transform:scaleY(1)}
-  61%{opacity:.95;transform:scaleY(1.04)}
-  100%{opacity:0;transform:scaleY(1.15)}
+  0%{opacity:.9;transform:translate(-50%,-50%) scale(.06);animation-timing-function:cubic-bezier(.1,.8,.3,1)}
+  14%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(1.03);animation-timing-function:cubic-bezier(.4,0,.6,1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.08)}
 }
-
-/* The impact frame itself: outline layers (and the burst rays, further
-   down) promoted above the white flash via z-index right as they pop in,
-   so the black shapes read clearly against it. Both fade out on the
-   .is-fading trigger instead of running their own independent timers, so
-   they always end in step with the white flash's own decline regardless
-   of how long that turns out to be — see fadeImpact(). */
-.lair-crack-stage.is-outlined .lair-crack-branches-outline,
-.lair-crack-stage.is-outlined .lair-crack-core-outline{opacity:1;z-index:12;transition:opacity .12s ease}
-.lair-crack-stage.is-fading .lair-crack-branches-outline,
-.lair-crack-stage.is-fading .lair-crack-core-outline{opacity:0;transition:opacity .35s ease}
-
-/* Click 2, stage 4: burst rays — on top of even the outline. Popping in
-   is a quick scale+fade with a small random per-ray delay ("crackle"
-   rather than a visible sweep); fading out is a single shared transition
-   triggered by .is-fading, not a self-timed keyframe, for the same
-   reason as the outline above — otherwise the rays (fixed ~0.55s
-   lifetime) can finish and vanish well before the white light does. */
-.lair-burst{position:absolute;left:55.49%;top:54.97%;width:158.2%;aspect-ratio:1163/687;transform:translate(-50%,-50%);pointer-events:none;z-index:13}
-.lair-burst svg{display:block;width:100%;height:100%;overflow:visible}
-.lair-burst svg [id^="ray-"]{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(0);transition:opacity .2s ease,transform .2s ease;transition-delay:var(--ray-delay,0s)}
-.lair-burst.is-bursting svg [id^="ray-"]{opacity:1;transform:scale(1)}
-.lair-burst.is-fading svg [id^="ray-"]{opacity:0;transform:scale(1);transition:opacity .35s ease,transform .35s ease;transition-delay:0s}
+.lair-crack-stage.is-charging{animation:crackCharge var(--charge-ms,650ms) cubic-bezier(.5,0,.9,.6) forwards}
+@keyframes crackCharge{
+  0%{filter:none;transform:translate(0,0)}
+  25%{transform:translate(.6px,-.5px)}
+  50%{transform:translate(-1px,.8px)}
+  75%{transform:translate(1.4px,-1px)}
+  100%{filter:brightness(2.2) drop-shadow(0 0 10px rgba(0,240,255,.9));transform:translate(-1.5px,1px)}
+}
+/* The crack doesn't survive the hit: it flares white and bursts outward
+   under the flash, together with the footer shards. */
+.lair-crack-stage.is-destroyed{animation:crackDestroy .3s ease-out forwards}
+@keyframes crackDestroy{
+  0%{opacity:1;filter:brightness(3) drop-shadow(0 0 14px #fff);transform:scale(1)}
+  100%{opacity:0;filter:brightness(3);transform:scale(1.12)}
+}
 
 /* ── FX TOGGLE BUTTON ────────────────── */
 .fx-toggle{font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:none;border:1px solid rgba(0,229,204,.3);color:var(--cyan);padding:4px 10px;cursor:pointer;transition:all .2s}
@@ -822,13 +825,10 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   </div>
   <div class="lair-crack-overlay" id="lairCrackOverlay" aria-hidden="true">
     <div class="lair-crack-stage" id="lairCrackStage">
-      <div class="lair-crack-branches-outline" id="lairCrackBranchesOutline"></div>
-      <div class="lair-crack-core-outline" id="lairCrackCoreOutline"></div>
       <div class="lair-crack-branches" id="lairCrackBranches"></div>
       <div class="lair-crack-core" id="lairCrackCore"></div>
-      <div class="lair-burst" id="lairBurst"></div>
     </div>
-    <div class="lair-flash" id="lairFlash"></div>
+    <div class="lair-charge" id="lairCharge"></div>
     <div class="lair-flash-white" id="lairFlashWhite"></div>
   </div>
 </footer>
@@ -1182,43 +1182,11 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     }
   }
 
-  function prefetchOutlines(){
-    const coreHost=document.getElementById('lairCrackCoreOutline');
-    const branchesHost=document.getElementById('lairCrackBranchesOutline');
-    function loadSvg(url,host){
-      if(!host||host.querySelector('svg'))return; // already loaded
-      fetch(url).then(r=>{
-        if(!r.ok)throw new Error('HTTP '+r.status+' for '+url);
-        return r.text();
-      }).then(svgText=>{host.innerHTML=svgText;}).catch(err=>{
-        console.error('[lair] failed to load',url,err);
-      });
-    }
-    loadSvg('assets/crack-core-outline.svg',coreHost);
-    loadSvg('assets/crack-branches-outline.svg',branchesHost);
-  }
-
-  function prefetchBurst(){
-    const host=document.getElementById('lairBurst');
-    if(!host||host.querySelector('svg'))return;
-    fetch('assets/crack-burst.svg').then(r=>{
-      if(!r.ok)throw new Error('HTTP '+r.status+' for crack-burst.svg');
-      return r.text();
-    }).then(svgText=>{host.innerHTML=svgText;}).catch(err=>{
-      console.error('[lair] failed to load crack-burst.svg',err);
-    });
-  }
-
   function crackOpen(){
     overlay.classList.add('is-open');
     revealCore();
     traceBranches();
     buildChargeClones();
-    // Not needed until click 2, but small enough to fetch now in the
-    // background so there's no network lag when the outline/burst actually
-    // need to appear mid-explosion.
-    prefetchOutlines();
-    prefetchBurst();
     lairModulePromise=import('./lair.js').catch(err=>{
       console.error('[lair] chunk load failed',err);
     });
@@ -1282,67 +1250,53 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     });
   }
 
-  // Two flashes back to back, game hit-flash style: a long-ish colour
-  // "windup" flash, immediately followed (overlapping its tail, no gap)
-  // by a short, near-instant white "impact" flash. The outline ("impact
-  // frame") and burst rays both fire on the white flash's snap, not the
-  // colour flash's — that's the whole point, contour+rays land exactly
-  // when the screen goes white, like a fighting-game super-hit.
-  const FLASH_DURATION_MS=1350; // 1800 * .75 — colour flash trimmed by 25%
-  const WHITE_FLASH_OVERLAP_MS=150; // white flash starts this far before the colour flash's natural end
-  // Three-beat structure inside the white flash (.9s, see the
-  // lairFlashWhite keyframe), game hit-flash style:
-  // white alone (brief) -> impact frame pops in and holds a bit longer
-  // than that solo beat -> both fade out together at the end. The white
-  // flash's own keyframe (17%/61% marks of 900ms) is shaped to match
-  // these same offsets, so the light's rise/hold/decline lines up with
-  // the impact frame's own timeline instead of the two drifting apart.
-  const IMPACT_SOLO_MS=150; // white shows alone before the impact frame appears
-  const IMPACT_FADE_START_MS=550; // impact + white begin fading out together here — extended so the impact itself has time to actually register, not just the white flash
-  const WHITE_FLASH_DURATION_MS=900; // matches the lairFlashWhite keyframe's own duration
-  const LAIR_MOUNT_BUFFER_MS=150; // small buffer after the white flash is fully gone before mounting #lair
+  // Impact point = centre of the crack's core, as a fraction of the stage
+  // box. Every part of the hit (charge glow, white flash, shatter, the
+  // rift's ember) originates here.
+  const IMPACT_X=.5549,IMPACT_Y=.5497;
+  const CHARGE_MS=650;           // colour "заряд" gathering at the core, peaks right at the hit
+  const LAIR_MOUNT_DELAY_MS=1100; // after the hit: white flash (1s) is gone by then
+  const reduceMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function fireFlash(){
-    const flash=document.getElementById('lairFlash');
-    if(flash)flash.classList.add('is-flashing');
+  function placeAtImpact(el){
+    if(!el||!stage)return;
+    el.style.left=(stage.offsetLeft+stage.offsetWidth*IMPACT_X)+'px';
+    el.style.top=(stage.offsetTop+stage.offsetHeight*IMPACT_Y)+'px';
   }
 
-  function fireWhiteFlash(){
-    const flash=document.getElementById('lairFlashWhite');
-    if(flash)flash.classList.add('is-flashing');
+  function startCharge(){
+    const charge=document.getElementById('lairCharge');
+    placeAtImpact(charge);
+    [charge,stage].forEach(el=>{
+      if(!el)return;
+      el.style.setProperty('--charge-ms',CHARGE_MS+'ms');
+      el.classList.add('is-charging');
+    });
   }
 
-  function fireImpact(){
-    // outline
-    if(stage)stage.classList.add('is-outlined');
-    lairState='outlined';
-    // burst rays
-    const host=document.getElementById('lairBurst');
-    const svg=host?host.querySelector('svg'):null;
-    if(svg){
-      svg.querySelectorAll('[id^="ray-"]').forEach(el=>{
-        el.style.setProperty('--ray-delay',(Math.random()*0.09).toFixed(3)+'s');
-      });
-      host.classList.add('is-bursting');
-    }
+  function shakeFooter(){
+    const footerEl=document.querySelector('footer');
+    if(!footerEl||reduceMotion())return;
+    footerEl.animate([
+      {transform:'translate(0,0)'},{transform:'translate(-5px,3px)'},{transform:'translate(4px,-3px)'},
+      {transform:'translate(-3px,-2px)'},{transform:'translate(2px,2px)'},{transform:'translate(0,0)'}
+    ],{duration:320,easing:'ease-out'});
   }
 
-  function fadeImpact(){
-    // Both the outline and the burst rays used to fade out on their own
-    // fixed timers (or not at all), independent of the white flash's own
-    // length — so whichever finished first (usually the rays, ~0.55s)
-    // left the other sitting on the plain dark background, essentially
-    // invisible, for however long was left. Trigger both from here
-    // instead, on the same beat as the white flash's own decline, so
-    // everything reads as one hit landing and fading together.
-    if(stage)stage.classList.add('is-fading');
-    const host=document.getElementById('lairBurst');
-    if(host)host.classList.add('is-fading');
+  function fireHit(){
+    const white=document.getElementById('lairFlashWhite');
+    placeAtImpact(white);
+    if(white)white.classList.add('is-flashing');
+    const charge=document.getElementById('lairCharge');
+    if(charge)charge.classList.add('is-released');
+    exitFooter(); // reads the impact point off the stage, so before it starts moving
+    if(stage)stage.classList.add('is-destroyed');
+    shakeFooter();
   }
 
   function fadeFooter(){
-    // Same beat as fireImpact() — the fade is meant to happen while the
-    // white flash is bright enough to hide it, not be visible on its own.
+    // Reduced-motion fallback for the shatter. Fired on the hit, so the
+    // fade happens while the white flash is bright enough to hide it.
     const footerEl=document.querySelector('footer');
     if(footerEl)footerEl.classList.add('is-hiding');
   }
@@ -1381,6 +1335,24 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     });
     return out;
   }
+  function impactInFooter(footerEl){
+    const fr=footerEl.getBoundingClientRect();
+    const sr=stage?stage.getBoundingClientRect():null;
+    if(!sr||!sr.width)return [fr.width/2,fr.height/2];
+    return [sr.left+sr.width*IMPACT_X-fr.left,sr.top+sr.height*IMPACT_Y-fr.top];
+  }
+
+  // The lair's layer, laid under the footer's own box (border included).
+  function openRift(footerEl,soft){
+    if(footerEl.querySelector(':scope > .lair-rift'))return;
+    const [cx,cy]=impactInFooter(footerEl);
+    const rift=document.createElement('div');
+    rift.className='lair-rift'+(soft?' is-soft':'');
+    rift.setAttribute('aria-hidden','true');
+    rift.style.cssText=`top:${-footerEl.clientTop}px;width:${footerEl.offsetWidth}px;height:${footerEl.offsetHeight}px;--ix:${cx.toFixed(0)}px;--iy:${cy.toFixed(0)}px`;
+    footerEl.appendChild(rift);
+  }
+
   function shatterFooter(){
     const footerEl=document.querySelector('footer');
     const content=footerEl?footerEl.querySelector(':scope > .container'):null;
@@ -1388,13 +1360,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     const fr=footerEl.getBoundingClientRect();
     const W=fr.width,H=fr.height;
     const cs=getComputedStyle(footerEl);
-    // Impact point = centre of the burst/core, same spot the rays come from.
-    let cx=W/2,cy=H/2;
-    const burst=document.getElementById('lairBurst');
-    if(burst){
-      const br=burst.getBoundingClientRect();
-      if(br.width){cx=br.left+br.width/2-fr.left;cy=br.top+br.height/2-fr.top;}
-    }
+    const [cx,cy]=impactInFooter(footerEl);
     // Radial cracks: one per crack branch, aimed at the branch's farthest
     // corner from the impact point (≈ its tip).
     const angles=[];
@@ -1467,6 +1433,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
         shards.push({el,mx,my,ring:k});
       }
     }
+    openRift(footerEl,false);
     footerEl.appendChild(host);
     footerEl.classList.add('is-shattered');
 
@@ -1496,8 +1463,10 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   }
 
   function exitFooter(){
-    const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(reduce||!shatterFooter())fadeFooter();
+    if(!reduceMotion()&&shatterFooter())return;
+    fadeFooter();
+    const footerEl=document.querySelector('footer');
+    if(footerEl)openRift(footerEl,true);
   }
 
   function mountLair(){
@@ -1515,23 +1484,14 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     if(stage)stage.classList.remove('is-revealed','is-hover-boost'); // pause the idle loop for the real explosion
     fireSpark();
     // +120ms covers the double-rAF priming delay in fireSpark() plus a
-    // small buffer, same pattern as REVEAL_TOTAL_MS — colour flash starts
-    // right as the spark finishes reaching the tips.
+    // small buffer — the charge starts right as the spark reaches the
+    // tips, and the hit lands exactly at the charge's peak.
     setTimeout(()=>{
-      fireFlash();
+      startCharge();
       setTimeout(()=>{
-        fireWhiteFlash();
-        setTimeout(fireImpact,IMPACT_SOLO_MS);
-        setTimeout(fadeImpact,IMPACT_FADE_START_MS);
-        setTimeout(exitFooter,IMPACT_SOLO_MS);
-        // #lair mounts once the longest animation (the white flash) has
-        // fully finished, plus a small buffer — matches the spec's
-        // "по завершении самой долгой анимации" via a padded timeout
-        // rather than animationend (simpler to keep in sync given
-        // several elements with slightly different transition lengths
-        // all need to be done, not just one).
-        setTimeout(mountLair,WHITE_FLASH_DURATION_MS+LAIR_MOUNT_BUFFER_MS);
-      },FLASH_DURATION_MS-WHITE_FLASH_OVERLAP_MS);
+        fireHit();
+        setTimeout(mountLair,LAIR_MOUNT_DELAY_MS);
+      },CHARGE_MS);
     },SPARK_DURATION_MS+120);
   }
 
