@@ -2,9 +2,8 @@
 // Fetched in the background as soon as the crack trigger fires (click 1),
 // so it's ready by the time the transition finishes and mount() is called.
 // Content itself is static markup already sitting in index.html (hidden) —
-// this just reveals it and carries the page down to it. Real dynamic content
-// (narrative, interactivity) is a later phase; the monitor placeholders
-// are only there to prove the transition + mount actually work.
+// this reveals it, carries the page down to it and brings the watch room's
+// CCTV feeds to life. Entering the rooms behind the feeds is the next phase.
 export function mount({glideMs=2000}={}){
   const section = document.getElementById('lair');
   if(!section) return;
@@ -14,6 +13,34 @@ export function mount({glideMs=2000}={}){
   // opened rift above it stays in view on arrival.
   const target = Math.max(0, section.getBoundingClientRect().top + window.scrollY - window.innerHeight*0.3);
   glideTo(target, glideMs);
+  startFeeds(section);
+}
+
+// Watch room feeds: a live CCTV-style timestamp on every screen, and now
+// and then a short signal glitch on a random feed.
+function startFeeds(section){
+  const clocks = section.querySelectorAll('[data-feed-clock]');
+  const pad = n => String(n).padStart(2,'0');
+  const tick = () => {
+    const d = new Date();
+    const text = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    clocks.forEach(el => { el.textContent = text; });
+  };
+  tick();
+  setInterval(tick, 1000);
+
+  const screens = [...section.querySelectorAll('.feed-screen')];
+  if(!screens.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  (function glitchLater(){
+    setTimeout(() => {
+      if(!document.body.classList.contains('fx-off')){
+        const el = screens[Math.floor(Math.random()*screens.length)];
+        el.classList.add('is-glitching');
+        setTimeout(() => el.classList.remove('is-glitching'), 400);
+      }
+      glitchLater();
+    }, 3500 + Math.random()*6000);
+  })();
 }
 
 // A slow ease-in-out scroll instead of the browser's quick smooth scroll:
