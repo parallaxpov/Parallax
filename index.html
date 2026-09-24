@@ -310,6 +310,40 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .lair-feed figcaption{margin-top:14px;display:flex;flex-direction:column;gap:3px}
 .feed-sector{font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:#e9d5ff}
 .feed-sub{font-family:var(--mono);font-size:12px;color:rgba(236,72,153,.65);letter-spacing:.08em}
+/* feeds as doors: a feed with a room behind it is clickable; the others
+   answer with a short "ACCESS PENDING". During a room transition the other
+   feeds drop to NO SIGNAL. */
+.lair-feed{cursor:pointer;outline:none}
+.lair-feed:focus-visible .feed-screen{box-shadow:0 0 0 4px #0a0712,0 0 0 5px rgba(0,240,255,.6)}
+.feed-msg{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:#fff;
+  text-shadow:0 0 6px #000,0 0 12px rgba(236,72,153,.7);opacity:0;transition:opacity .15s ease;pointer-events:none}
+.feed-screen.show-msg .feed-msg{opacity:1}
+.lair-feed.no-signal .feed-screen img{opacity:0;transition:opacity .2s ease}
+.lair-feed.no-signal .feed-grain{opacity:.35}
+
+/* Room view — a full-screen space under the nav, filled from rooms/<id>.html */
+html.room-open,html.room-open body{overflow:hidden}
+.room-view{position:fixed;inset:0;z-index:90;overflow-y:auto;padding-top:54px;background-color:var(--den-bg);
+  background-image:radial-gradient(rgba(236,72,153,.13) 1px,transparent 1.6px);background-size:24px 24px}
+.room-view[hidden]{display:none}
+.room-hero{height:min(42vh,380px);background-size:cover;background-position:center;position:relative}
+.room-hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0px,rgba(0,0,0,.2) 1px,transparent 1px,transparent 3px)}
+.room-inner{position:relative;margin-top:-110px;padding-bottom:120px}
+.room-back{font-family:var(--mono);font-size:12px;letter-spacing:.16em;background:rgba(12,7,22,.75);border:1px solid rgba(236,72,153,.35);color:#e9d5ff;padding:9px 14px;cursor:pointer;margin-bottom:28px;transition:border-color .2s,color .2s,box-shadow .2s}
+.room-back:hover,.room-back:focus-visible{border-color:rgba(0,240,255,.6);color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.2);outline:none}
+.room-view .section-label{margin-bottom:12px}
+.room-sector{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:rgba(236,72,153,.7);margin-bottom:40px}
+.room-empty{border:1px dashed rgba(236,72,153,.25);padding:64px 24px;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--text-dim)}
+.room-empty .warn{color:#f59e0b}
+/* the "camera push-in" layer: starts on the feed's screen, grows to fill the viewport */
+.room-zoom{position:fixed;z-index:89;overflow:hidden;background:#000;pointer-events:none}
+.room-zoom img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.7) contrast(1.08) brightness(.82)}
+.room-zoom::before{content:'';position:absolute;inset:0;z-index:2;background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0px,rgba(0,0,0,.25) 1px,transparent 1px,transparent 3px);box-shadow:inset 0 0 80px rgba(0,0,0,.8)}
+.room-zoom .feed-grain{opacity:.28}
+.room-zoom-osd{position:absolute;left:50%;top:50%;z-index:3;transform:translate(-50%,-50%);font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:#fff;white-space:nowrap;
+  text-shadow:0 0 6px #000,0 0 14px rgba(0,240,255,.7)}
+.room-zoom-black{position:absolute;inset:0;z-index:4;background:#000;opacity:0}
+
 @media (prefers-reduced-motion: reduce){.feed-screen img,.feed-screen::after,.feed-grain,.lair-post .lp-dot,.feed-rec i{animation:none!important}}
 body.fx-off .feed-grain,body.fx-off .feed-screen::after{display:none}
 
@@ -899,7 +933,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
     <div class="section-label">// 0x00 — <span data-i18n="lair_label">логово</span></div>
     <div class="lair-post"><span class="lp-dot"></span>WATCH ROOM · <span data-i18n="lair_post">пост наблюдения</span> · 3 FEEDS ONLINE</div>
     <div class="lair-monitors">
-      <figure class="lair-feed">
+      <figure class="lair-feed" data-room="blindspot">
         <div class="feed-screen" style="--feed-delay:0s">
           <img src="assets/lair/feed-blindspot.webp" alt="" loading="lazy">
           <div class="feed-grain"></div>
@@ -927,6 +961,8 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
   </div>
 </section>
 
+<div class="room-view" id="roomView" hidden aria-hidden="true"></div>
+
 <script>
 const T={
 ru:{nav_about:'О себе',nav_projects:'Проекты',nav_focus:'Сейчас',nav_skills:'Навыки',nav_pub:'Публикации',nav_contacts:'Контакты',
@@ -944,7 +980,7 @@ status_5:'курс PT MaxPatrol Blue Team',status_6:'работа над про�
 log_1:'CARAI — разработка концепта и роадмап',log_2:'PT NAD — курс завершён',log_3:'Cognitive Phishing Inoculation — концепт и исследование',log_4:'PT MaxPatrol SIEM — курс завершён',log_5:'PT MaxPatrol Blue Team — курс в процессе',log_6:'RAD COP — проект в процессе',log_7:'серия статей на Habr — на доработке',
 skills_label:'навыки',skills_conf:'// Confident — освоено',skills_learn:'// Learning — активно изучаю',
 pub_label:'публикации',pub_note:'// публикуется по мере готовности, не по расписанию',pub_icm:'InfoSec Career Map',pub_1:'Mythos не взломает вашу систему. Он просто очень хочет помочь',pub_2:'ИИ хочет голос, но не вето. Что делать когда модель перестаёт быть инструментом',pub_3:'Парасоциальные системы и ИИ: самоэксперимент',pub_4:'ИИ-психоз и тулпы: старый механизм, промышленный масштаб',
-cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',lair_label:'логово',lair_post:'пост наблюдения',room_lab:'лаборатория исследований',room_workshop:'мастерская робототехника',room_render:'пространство 3D-художника',si_open:'открыт к предложениям'},
+cont_label:'контакты',cont_tg:'публичный канал · исследования',cont_habr:'статьи · технические разборы',cont_email:'для коллабораций',lair_label:'логово',lair_post:'пост наблюдения',room_lab:'лаборатория исследований',room_workshop:'мастерская робототехника',room_render:'пространство 3D-художника',room_empty:'комната пуста · записей пока нет',si_open:'открыт к предложениям'},
 en:{nav_about:'About',nav_projects:'Projects',nav_focus:'Now',nav_skills:'Skills',nav_pub:'Publications',nav_contacts:'Contacts',
 hero_sys:'// profile initialization',hero_name:'PARALLAX',hero_pos:'Researcher at the intersection of InfoSec, AI & Psychology',
 hero_tagline:"I research what others prefer not to notice",hero_btn1:'Projects',hero_btn2:'Contacts',
@@ -960,7 +996,7 @@ status_5:'PT MaxPatrol Blue Team course',status_6:'working on projects (CARAI, R
 log_1:'CARAI concept development and roadmap',log_2:'PT NAD — course complete',log_3:'Cognitive phishing inoculation — concept & research',log_4:'PT MaxPatrol SIEM — course complete',log_5:'PT MaxPatrol Blue Team — course in progress',log_6:'RAD COP — project in progress',log_7:'Habr article series — in revision',
 skills_label:'skills',skills_conf:'// Confident — mastered',skills_learn:'// Learning — actively studying',
 pub_label:'publications',pub_note:'// published when ready, not on schedule',pub_icm:'InfoSec Career Map',pub_1:"Mythos won't hack your system. It just really wants to help",pub_2:'AI wants a voice, not a veto. What to do when the model stops being a tool',pub_3:'Parasocial systems and AI: a self-experiment',pub_4:'AI psychosis and tulpas: an old mechanism, industrial scale',
-cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',lair_label:'the lair',lair_post:'observation post',room_lab:'research lab',room_workshop:'robotics workshop',room_render:'3D artist space',si_open:'open to proposals'}};
+cont_label:'contacts',cont_tg:'public channel · research',cont_habr:'articles · technical breakdowns',cont_email:'for collaborations',lair_label:'the lair',lair_post:'observation post',room_lab:'research lab',room_workshop:'robotics workshop',room_render:'3D artist space',room_empty:'room is empty · no records yet',si_open:'open to proposals'}};
 
 let lang='ru';
 function applyLang(l){
@@ -1652,6 +1688,29 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     stage.addEventListener('click',()=>{
       if(lairState==='revealed')crackExplode();
     });
+  }
+
+  // Direct entry: a room link (…/#blindspot) skips the whole crack sequence
+  // and puts the page straight into its post-explosion state, then opens
+  // the room without animation — quick to get to, and it never gets old.
+  function openLairInstant(room){
+    const footerEl=document.querySelector('footer');
+    const contacts=document.getElementById('contacts');
+    if(!footerEl)return;
+    lairState='mounted';
+    openRift(footerEl,false);
+    footerEl.classList.add('is-shattered');
+    if(contacts)contacts.classList.add('is-shattered');
+    enableContactsDrawer();
+    lairModulePromise=import('./lair.js');
+    lairModulePromise.then(mod=>{
+      mod.mount({glideMs:0});
+      mod.openRoom(room,{instant:true});
+    }).catch(err=>console.error('[lair] direct entry failed',err));
+  }
+  const directRoom=location.hash.slice(1);
+  if(directRoom&&/^[a-z0-9-]+$/.test(directRoom)&&document.querySelector(`.lair-feed[data-room="${directRoom}"]`)){
+    openLairInstant(directRoom);
   }
 })();
 
