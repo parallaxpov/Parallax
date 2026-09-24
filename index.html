@@ -281,12 +281,18 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 /* FOOTER */
 footer{border-top:var(--bd);padding:36px 0}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;transition:opacity .4s ease,transform .4s ease}
-/* Click 2, final stage: footer exit — variant B (fade + drop), timed to
-   happen while the white flash is bright enough to hide the transition.
-   TODO follow-up: shatter into fragments instead of a plain fade, per
-   the original spec ("без нарезки на осколки — делаем позже") — this is
-   the placeholder. */
+/* Click 2, final stage: footer exit. Default is the footer shattering
+   into shards (see shatterFooter() in the lair script); the plain
+   fade + drop below is kept as the fallback for prefers-reduced-motion. */
 footer.is-hiding .footer-inner{opacity:0;transform:translateY(14px)}
+/* Shatter: the real footer content + its border hide instantly (under the
+   white flash) and a set of clipped clones of it fly apart instead. */
+footer.is-shattered{border-top-color:transparent}
+footer.is-shattered>.container{visibility:hidden}
+.footer-shards{position:absolute;left:0;pointer-events:none;z-index:4}
+.footer-shard{position:absolute;inset:0;box-sizing:border-box;background:rgba(255,255,255,.012);will-change:transform,opacity}
+.footer-shard-edge{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.footer-shard-edge polygon{fill:none;stroke:rgba(126,200,255,.32);stroke-width:1.5;stroke-linejoin:round}
 .footer-log{font-family:var(--mono);font-size:13px;color:var(--text-dim);line-height:2.2}
 .footer-log .ok{color:#22c55e}.footer-log .warn{color:#f59e0b}
 .footer-copy{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-align:right;line-height:2}
@@ -1341,6 +1347,159 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     if(footerEl)footerEl.classList.add('is-hiding');
   }
 
+  // Click 2, final stage: the footer shatters into shards along the crack.
+  // A browser can't cut live DOM into pieces, so each shard is a full clone
+  // of the footer's content clipped to one polygon (clip-path); together
+  // they tile the footer exactly, then fly apart. The fracture pattern is
+  // glass-impact style: radial lines from the crack's centre (one per real
+  // crack branch, plus fillers so no angular gap is too wide) crossed by
+  // jittered concentric rings. Vertices are shared between neighbouring
+  // shards, so the tiling has no gaps before it breaks apart.
+  const SHATTER_RING_START=58;   // px — radius of the first ring (small pieces near the impact)
+  const SHATTER_RING_GROWTH=1.7; // each ring is this much farther out than the previous one
+  const SHATTER_MAX_GAP_DEG=30;  // fill in extra radial cracks wherever branches leave a wider gap
+  const SHATTER_DURATION_MS=1800;
+  // Sutherland–Hodgman: clip a convex-ish polygon to the footer's box, so
+  // shard outlines (and hit area) never spill past the footer itself.
+  function clipToRect(poly,W,H){
+    const edges=[
+      [p=>p[0]>=0,(a,b)=>{const t=(0-a[0])/(b[0]-a[0]);return [0,a[1]+t*(b[1]-a[1])];}],
+      [p=>p[0]<=W,(a,b)=>{const t=(W-a[0])/(b[0]-a[0]);return [W,a[1]+t*(b[1]-a[1])];}],
+      [p=>p[1]>=0,(a,b)=>{const t=(0-a[1])/(b[1]-a[1]);return [a[0]+t*(b[0]-a[0]),0];}],
+      [p=>p[1]<=H,(a,b)=>{const t=(H-a[1])/(b[1]-a[1]);return [a[0]+t*(b[0]-a[0]),H];}]
+    ];
+    let out=poly;
+    edges.forEach(([inside,cross])=>{
+      const src=out;out=[];
+      src.forEach((cur,i)=>{
+        const prev=src[(i+src.length-1)%src.length];
+        if(inside(cur)){
+          if(!inside(prev))out.push(cross(prev,cur));
+          out.push(cur);
+        } else if(inside(prev))out.push(cross(prev,cur));
+      });
+    });
+    return out;
+  }
+  function shatterFooter(){
+    const footerEl=document.querySelector('footer');
+    const content=footerEl?footerEl.querySelector(':scope > .container'):null;
+    if(!footerEl||!content)return false;
+    const fr=footerEl.getBoundingClientRect();
+    const W=fr.width,H=fr.height;
+    const cs=getComputedStyle(footerEl);
+    // Impact point = centre of the burst/core, same spot the rays come from.
+    let cx=W/2,cy=H/2;
+    const burst=document.getElementById('lairBurst');
+    if(burst){
+      const br=burst.getBoundingClientRect();
+      if(br.width){cx=br.left+br.width/2-fr.left;cy=br.top+br.height/2-fr.top;}
+    }
+    // Radial cracks: one per crack branch, aimed at the branch's farthest
+    // corner from the impact point (≈ its tip).
+    const angles=[];
+    document.querySelectorAll('#lairCrackBranches svg [id^="branch-"]').forEach(g=>{
+      const r=g.getBoundingClientRect();
+      if(!r.width&&!r.height)return;
+      let best=null,bestD=-1;
+      [[r.left,r.top],[r.right,r.top],[r.left,r.bottom],[r.right,r.bottom]].forEach(([x,y])=>{
+        const dx=x-fr.left-cx,dy=y-fr.top-cy,d=dx*dx+dy*dy;
+        if(d>bestD){bestD=d;best=Math.atan2(dy,dx);}
+      });
+      angles.push(best);
+    });
+    if(angles.length<3)for(let i=0;i<8;i++)angles.push(i/8*Math.PI*2);
+    angles.sort((a,b)=>a-b);
+    const maxGap=SHATTER_MAX_GAP_DEG*Math.PI/180;
+    const rays=[];
+    angles.forEach((a,i)=>{
+      rays.push(a);
+      const next=i+1<angles.length?angles[i+1]:angles[0]+Math.PI*2;
+      const n=Math.ceil((next-a)/maxGap);
+      for(let k=1;k<n;k++)rays.push(a+(next-a)*(k+(Math.random()-.5)*.4)/n);
+    });
+    // Ring radii, out past the farthest footer corner.
+    const far=Math.max(Math.hypot(cx,cy),Math.hypot(W-cx,cy),Math.hypot(cx,H-cy),Math.hypot(W-cx,H-cy));
+    const radii=[0];
+    for(let r=SHATTER_RING_START;;r*=SHATTER_RING_GROWTH){radii.push(r);if(r>far)break;}
+    radii[radii.length-1]=far*1.5+100;
+    // Shared vertex grid: P[j][k] = point on ray j at ring k (jittered).
+    const P=rays.map(a=>radii.map((r,k)=>{
+      if(k===0)return [cx,cy];
+      const last=k===radii.length-1;
+      const rr=last?r:r*(1+(Math.random()-.5)*.28);
+      const aa=a+(last?0:(Math.random()-.5)*.08);
+      return [cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr];
+    }));
+
+    const host=document.createElement('div');
+    host.className='footer-shards';
+    host.setAttribute('aria-hidden','true');
+    const bw=footerEl.clientTop;
+    host.style.cssText=`top:${-bw}px;width:${W}px;height:${H}px`;
+    const tpl=content.cloneNode(true);
+    tpl.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+    tpl.querySelectorAll('[tabindex],[role]').forEach(el=>{el.removeAttribute('tabindex');el.removeAttribute('role');});
+    const svgNS='http://www.w3.org/2000/svg';
+    const shards=[];
+    for(let j=0;j<rays.length;j++){
+      const j2=(j+1)%rays.length;
+      for(let k=0;k<radii.length-1;k++){
+        const poly=clipToRect(k===0?[P[j][0],P[j][1],P[j2][1]]:[P[j][k],P[j][k+1],P[j2][k+1],P[j2][k]],W,H);
+        if(poly.length<3)continue;
+        let area=0;poly.forEach((a,i)=>{const b=poly[(i+1)%poly.length];area+=a[0]*b[1]-b[0]*a[1];});
+        if(Math.abs(area)<60)continue; // skip slivers left over from the clipping
+        // Centroid drives the flight direction and the spin pivot.
+        const mx=poly.reduce((s,p)=>s+p[0],0)/poly.length;
+        const my=poly.reduce((s,p)=>s+p[1],0)/poly.length;
+        const pts=poly.map(p=>p[0].toFixed(1)+'px '+p[1].toFixed(1)+'px').join(',');
+        const el=document.createElement('div');
+        el.className='footer-shard';
+        el.style.cssText=`border-top:${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor};padding:${cs.padding};clip-path:polygon(${pts});transform-origin:${mx.toFixed(1)}px ${my.toFixed(1)}px`;
+        el.appendChild(tpl.cloneNode(true));
+        const edge=document.createElementNS(svgNS,'svg');
+        edge.setAttribute('class','footer-shard-edge');
+        const pg=document.createElementNS(svgNS,'polygon');
+        pg.setAttribute('points',poly.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '));
+        edge.appendChild(pg);
+        el.appendChild(edge);
+        host.appendChild(el);
+        shards.push({el,mx,my,ring:k});
+      }
+    }
+    footerEl.appendChild(host);
+    footerEl.classList.add('is-shattered');
+
+    // Motion, in two phases: a fast outward burst away from the impact
+    // point (harder for pieces close to it), then the pieces tumble and
+    // fall. They stay fully opaque through the burst — most of it happens
+    // under the white flash — and only fade out while falling, which is
+    // the part actually seen once the flash is gone.
+    const rings=radii.length-1;
+    shards.forEach(s=>{
+      const dx=s.mx-cx,dy=s.my-cy,d=Math.hypot(dx,dy)||1;
+      const near=1-s.ring/rings; // 1 at the impact, → 0 at the edge
+      const push=(60+Math.random()*120)*(.5+near);
+      const tx=dx/d*push,ty=dy/d*push*.7;
+      const fall=90+Math.random()*130;
+      const rot=(Math.random()<.5?-1:1)*(10+Math.random()*30)*(.5+near);
+      const delay=s.ring*20+Math.random()*40;
+      s.el.animate([
+        {transform:'none',opacity:1,easing:'cubic-bezier(.12,.7,.3,1)'},
+        {transform:`translate(${tx}px,${ty}px) rotate(${rot*.55}deg)`,opacity:1,offset:.35,easing:'cubic-bezier(.45,0,.85,.55)'},
+        {transform:`translate(${tx*1.1}px,${ty+fall*.45}px) rotate(${rot*.8}deg)`,opacity:.9,offset:.7},
+        {transform:`translate(${tx*1.2}px,${ty+fall}px) rotate(${rot}deg)`,opacity:0}
+      ],{duration:SHATTER_DURATION_MS-delay,delay,fill:'forwards'});
+    });
+    setTimeout(()=>host.remove(),SHATTER_DURATION_MS+100);
+    return true;
+  }
+
+  function exitFooter(){
+    const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce||!shatterFooter())fadeFooter();
+  }
+
   function mountLair(){
     if(!lairModulePromise)return;
     lairModulePromise.then(mod=>{
@@ -1364,7 +1523,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
         fireWhiteFlash();
         setTimeout(fireImpact,IMPACT_SOLO_MS);
         setTimeout(fadeImpact,IMPACT_FADE_START_MS);
-        setTimeout(fadeFooter,IMPACT_SOLO_MS);
+        setTimeout(exitFooter,IMPACT_SOLO_MS);
         // #lair mounts once the longest animation (the white flash) has
         // fully finished, plus a small buffer — matches the spec's
         // "по завершении самой долгой анимации" via a padded timeout
