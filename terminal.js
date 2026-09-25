@@ -205,6 +205,20 @@ function saiPrompt(on){
 // confirmation is printed by the site itself, so "✓" always means it really
 // happened — never the model's word for it.
 const SAI_MARK = '\x1e';
+// What's on screen right now, sent with every message: the backend decides
+// toggles and "already open" from it, and the model is told to trust it over
+// the chat history (the user may have clicked things themselves).
+function siteState(){
+  const cur = (() => { try{ return lang; }catch(e){ return 'ru'; } })();
+  const roomOpen = document.documentElement.classList.contains('room-open');
+  return {
+    lang: cur === 'en' ? 'en' : 'ru',
+    fx: !document.body.classList.contains('fx-off'),
+    drawer: !!document.querySelector('.contacts-drawer.is-open'),
+    room: roomOpen ? location.hash.slice(1) : null,
+    lair: document.body.classList.contains('lair-open'),
+  };
+}
 const SAI_SECTIONS = ['about', 'projects', 'focus', 'skills', 'publications', 'lair'];
 function saiAction(a){
   const args = (a && a.args) || {};
@@ -224,6 +238,11 @@ function saiAction(a){
       const el = SAI_SECTIONS.includes(args.section) && $(args.section);
       if(!el || el.hidden) break;
       el.scrollIntoView({behavior: 'smooth'}); say(t().actGoto(esc(args.section))); return `go_to=${args.section}`;
+    }
+    case 'run_command': {
+      const cmd = String(args.command || '');
+      if(!['help', 'ls', 'whoami', 'about', 'date'].includes(cmd)) break;
+      run(cmd); return `command ${cmd}`;
     }
     case 'open_contacts': {
       const link = document.querySelector('nav a[href="#contacts"]');
@@ -255,7 +274,7 @@ async function saiAsk(text){
   try{
     const r = await fetch(linkGet() + '/sai/chat', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({messages: saiHistory}), signal: ctrl.signal,
+      body: JSON.stringify({messages: saiHistory, state: siteState()}), signal: ctrl.signal,
     });
     if(!r.ok){
       let msg = 'HTTP ' + r.status;
@@ -273,7 +292,8 @@ async function saiAsk(text){
       if(done) break;
       raw += dec.decode(value, {stream: true});
       const parts = raw.split(SAI_MARK);
-      answer = parts.filter((_, i) => i % 2 === 0).join('');
+      answer = parts.filter((_, i) => i % 2 === 0).join('')
+        .replace(/\[(?:выполнено сайтом|done by the site)[^\]]*\]/gi, '');  // old habit, never shown
       div.innerHTML = mdLite(answer.replace(/^\s+/, ''));
       // run each action once, as soon as its closing marker has arrived
       for(let i = 1; i < parts.length - 1; i += 2){
@@ -289,8 +309,9 @@ async function saiAsk(text){
     }
     answer = answer.trim();
     if(!answer && did.length){ div.remove(); }
-    // the model gets to know what the site actually did
-    if(did.length) answer = (answer ? answer + ' ' : '') + `[выполнено сайтом: ${did.join(', ')}]`;
+    // (what the site actually did reaches the model through siteState() on
+    // the next message — no service notes in the history: the model copied
+    // them as text)
     if(answer) saiHistory.push({role: 'assistant', content: answer.length > SAI_ANSWER_KEEP ? answer.slice(0, SAI_ANSWER_KEEP) + ' …' : answer});
     else saiHistory.pop();
   }catch(e){
