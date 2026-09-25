@@ -14,7 +14,12 @@ export function mount({glideMs=2000}={}){
   const target = Math.max(0, section.getBoundingClientRect().top + window.scrollY - window.innerHeight*0.3);
   glideTo(target, glideMs);
   startFeeds(section);
-  startTerminal();
+  // hand the site terminal what it needs for ls/open (terminal.js)
+  import('./terminal.js').then(term => term.setLairApi({
+    hasRoom: id => !!(ROOMS[id] && feedOf(id)),
+    enter: id => enterRoom(id),
+    deny: idx => { const f = section.querySelectorAll('.lair-feed')[idx]; if(f) denyAccess(f); },
+  })).catch(err => console.error('[lair] terminal hookup failed', err));
 }
 
 // Watch room feeds: a live CCTV-style timestamp on every screen, and now
@@ -301,108 +306,3 @@ window.addEventListener('hashchange', () => {
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && wantedRoom() && !document.querySelector('.contacts-drawer.is-open')) leaveRoom();
 });
-
-// ─── Post console ────────────────────────────────────────────────────────
-// A small scripted terminal: no backend, every answer is written here.
-// Later the natural home for SAI (see PLAN.md). Output follows the site
-// language; commands themselves stay English.
-const TERM_TEXT = {
-  ru: {
-    hello: 'POST_CONSOLE v0.1 · пост наблюдения\nВведите <acc>help</acc>, чтобы увидеть команды.',
-    help: 'Доступные команды:\n  <acc>help</acc>          — этот список\n  <acc>whoami</acc>        — кто вы здесь\n  <acc>about</acc>         — что это за место\n  <acc>ls</acc>            — комнаты и камеры\n  <acc>open</acc> <dim>&lt;комната&gt;</dim> — войти в комнату (например, open blindspot)\n  <acc>date</acc>          — время поста\n  <acc>sai</acc>           — связь с SAI\n  <acc>clear</acc>         — очистить экран',
-    whoami: 'guest\n<dim>Гостевой доступ: только наблюдение. Личные архивы закрыты.</dim>',
-    about: 'Логово PARALLAX — личное место за витриной портфолио.\nЗдесь копятся проекты, идеи, видение, записи и логи,\nчтобы со временем перечитывать и сравнивать.\n<dim>Исследую то, что другие предпочитают не замечать.</dim>',
-    ls: 'SECTOR 0x01  <acc>blindspot</acc>  лаборатория исследований   <ok>[OPEN]</ok>\nSECTOR 0x02  <acc>workshop</acc>   мастерская робототехника   <dim>[PENDING]</dim>\nSECTOR 0x03  <acc>render</acc>     пространство 3D-художника  <dim>[PENDING]</dim>',
-    openUsage: 'Использование: open &lt;комната&gt;. Список — <acc>ls</acc>.',
-    opening: r => `Подключение к ${r}…`,
-    pending: r => `<err>${r}: доступ ещё не выдан.</err>`,
-    noRoom: r => `<err>${r}: такой комнаты нет.</err> Список — <acc>ls</acc>.`,
-    sai: '<dim>SAI: канал не установлен.</dim>\nМодуль ещё не подключён к посту — появится вместе с собственным хостингом.',
-    sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
-    unknown: c => `<err>${c}: команда не найдена.</err> Попробуйте <acc>help</acc>.`,
-  },
-  en: {
-    hello: 'POST_CONSOLE v0.1 · observation post\nType <acc>help</acc> to see the commands.',
-    help: 'Available commands:\n  <acc>help</acc>          — this list\n  <acc>whoami</acc>        — who you are here\n  <acc>about</acc>         — what this place is\n  <acc>ls</acc>            — rooms and cameras\n  <acc>open</acc> <dim>&lt;room&gt;</dim>   — enter a room (e.g. open blindspot)\n  <acc>date</acc>          — post time\n  <acc>sai</acc>           — link to SAI\n  <acc>clear</acc>         — clear the screen',
-    whoami: 'guest\n<dim>Guest access: observation only. Personal archives are locked.</dim>',
-    about: "PARALLAX's lair — a personal place behind the portfolio.\nProjects, ideas, vision, notes and logs pile up here,\nto be re-read and compared over time.\n<dim>I research what others prefer not to notice.</dim>",
-    ls: 'SECTOR 0x01  <acc>blindspot</acc>  research lab        <ok>[OPEN]</ok>\nSECTOR 0x02  <acc>workshop</acc>   robotics workshop   <dim>[PENDING]</dim>\nSECTOR 0x03  <acc>render</acc>     3D artist space     <dim>[PENDING]</dim>',
-    openUsage: 'Usage: open &lt;room&gt;. See <acc>ls</acc>.',
-    opening: r => `Connecting to ${r}…`,
-    pending: r => `<err>${r}: access not granted yet.</err>`,
-    noRoom: r => `<err>${r}: no such room.</err> See <acc>ls</acc>.`,
-    sai: '<dim>SAI: no link established.</dim>\nThe module is not wired to the post yet — it comes with self-hosting.',
-    sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
-    unknown: c => `<err>${c}: command not found.</err> Try <acc>help</acc>.`,
-  },
-};
-const TERM_ROOMS = ['blindspot', 'workshop', 'render'];
-const TERM_CMDS = ['help', 'whoami', 'about', 'ls', 'open', 'date', 'sai', 'clear', 'sudo'];
-
-function termLang(){
-  try{ return (typeof lang !== 'undefined' && TERM_TEXT[lang]) ? lang : 'ru'; }catch(e){ return 'ru'; }
-}
-const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-// tiny markup for answers: <acc>, <dim>, <ok>, <err> → styled spans
-const markup = t => t.replace(/<(acc|dim|ok|err)>/g, '<span class="lt-$1">').replace(/<\/(acc|dim|ok|err)>/g, '</span>');
-
-function startTerminal(){
-  const out = document.getElementById('lairTermOut'), input = document.getElementById('lairTermIn');
-  if(!out || !input || input.dataset.ready) return;
-  input.dataset.ready = '1';
-  const cmdHistory = [];
-  let hIdx = 0;
-  const print = html => {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    out.appendChild(div);
-    out.scrollTop = out.scrollHeight;
-  };
-  const say = key => { const v = TERM_TEXT[termLang()][key]; print(markup(typeof v === 'function' ? v() : v)); };
-  say('hello');
-
-  function run(raw){
-    const line = raw.trim();
-    print(`<span class="lt-cmd"><b>guest@lair:~$</b> ${esc(line)}</span>`);
-    if(!line) return;
-    cmdHistory.push(line); hIdx = cmdHistory.length;
-    const [cmd, ...args] = line.split(/\s+/);
-    const t = TERM_TEXT[termLang()];
-    switch(cmd.toLowerCase()){
-      case 'help': case '?': say('help'); break;
-      case 'whoami': say('whoami'); break;
-      case 'about': say('about'); break;
-      case 'ls': say('ls'); break;
-      case 'date': print(new Date().toString()); break;
-      case 'sai': say('sai'); break;
-      case 'sudo': say('sudo'); break;
-      case 'clear': case 'cls': out.innerHTML = ''; break;
-      case 'open': case 'cd': {
-        const r = (args[0] || '').toLowerCase();
-        if(!r){ say('openUsage'); break; }
-        if(ROOMS[r] && feedOf(r)){ print(markup(t.opening(esc(r)))); setTimeout(() => enterRoom(r), 350); }
-        else if(TERM_ROOMS.includes(r)){ print(markup(t.pending(esc(r)))); denyAccess(document.querySelectorAll('.lair-feed')[TERM_ROOMS.indexOf(r)]); }
-        else print(markup(t.noRoom(esc(r))));
-        break;
-      }
-      default: print(markup(t.unknown(esc(cmd))));
-    }
-  }
-
-  input.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){ e.preventDefault(); run(input.value); input.value = ''; }
-    else if(e.key === 'ArrowUp'){ if(hIdx > 0){ hIdx--; input.value = cmdHistory[hIdx]; } e.preventDefault(); }
-    else if(e.key === 'ArrowDown'){ if(hIdx < cmdHistory.length){ hIdx++; input.value = cmdHistory[hIdx] || ''; } e.preventDefault(); }
-    else if(e.key === 'Tab'){
-      // complete a command, or a room name after open/cd
-      e.preventDefault();
-      const parts = input.value.split(/\s+/);
-      const pool = parts.length > 1 ? TERM_ROOMS : TERM_CMDS;
-      const last = parts[parts.length - 1].toLowerCase();
-      const hits = pool.filter(x => x.startsWith(last));
-      if(hits.length === 1){ parts[parts.length - 1] = hits[0]; input.value = parts.join(' ') + (parts.length === 1 ? ' ' : ''); }
-      else if(hits.length > 1) print(`<span class="lt-dim">${hits.join('  ')}</span>`);
-    }
-    else if(e.key === 'Escape') e.stopPropagation();
-  });
-}
