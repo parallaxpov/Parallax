@@ -68,6 +68,13 @@ const TEXT = {
     saiReset: '<dim>SAI: разговор забыт</dim>',
     saiAborted: '<dim>[ответ прерван]</dim>',
     saiTooLong: (n, max) => `<err>SAI: слишком длинное сообщение — ${n} / ${max} символов.</err> <dim>Разбейте на части.</dim>`,
+    actLang: l => `<ok>✓ язык: ${l === 'en' ? 'English' : 'русский'}</ok>`,
+    actFx: on => `<ok>✓ эффекты: ${on ? 'ON' : 'OFF'}</ok>`,
+    actGoto: s => `<ok>✓ → #${s}</ok>`,
+    actContacts: '<ok>✓ контакты</ok>',
+    actRoom: r => `<ok>✓ открываю ${r}</ok>`,
+    actDenied: r => `<err>✗ ${r}: доступ ещё не выдан</err>`,
+    actFailed: a => `<err>✗ действие не выполнено: ${a}</err>`,
     saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'имя пользователя:',
     loginPass: 'пароль:',
@@ -122,6 +129,13 @@ const TEXT = {
     saiReset: '<dim>SAI: conversation forgotten</dim>',
     saiAborted: '<dim>[answer interrupted]</dim>',
     saiTooLong: (n, max) => `<err>SAI: message too long — ${n} / ${max} characters.</err> <dim>Split it into parts.</dim>`,
+    actLang: l => `<ok>✓ language: ${l === 'en' ? 'English' : 'Russian'}</ok>`,
+    actFx: on => `<ok>✓ effects: ${on ? 'ON' : 'OFF'}</ok>`,
+    actGoto: s => `<ok>✓ → #${s}</ok>`,
+    actContacts: '<ok>✓ contacts</ok>',
+    actRoom: r => `<ok>✓ opening ${r}</ok>`,
+    actDenied: r => `<err>✗ ${r}: access not granted yet</err>`,
+    actFailed: a => `<err>✗ action not done: ${a}</err>`,
     saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'username:',
     loginPass: 'password:',
@@ -186,6 +200,47 @@ function saiPrompt(on){
   $('termPrompt').textContent = on ? 'sai>' : PROFILES[profile].prompt;
 }
 
+// SAI's actions arrive inside the answer stream between \x1e markers (see
+// parallax-backend sai.py). Only what's listed here can happen; the
+// confirmation is printed by the site itself, so "✓" always means it really
+// happened — never the model's word for it.
+const SAI_MARK = '\x1e';
+const SAI_SECTIONS = ['about', 'projects', 'focus', 'skills', 'publications', 'lair'];
+function saiAction(a){
+  const args = (a && a.args) || {};
+  const curLang = (() => { try{ return lang; }catch(e){ return 'ru'; } })();
+  switch(a && a.action){
+    case 'set_language': {
+      if(args.lang !== 'ru' && args.lang !== 'en') break;
+      if(args.lang !== curLang){ const b = $('langToggle'); if(b) b.click(); }
+      say(t().actLang(args.lang)); return `language=${args.lang}`;
+    }
+    case 'set_effects': {
+      const on = !!args.on, isOn = !document.body.classList.contains('fx-off');
+      if(on !== isOn){ const b = $('fxToggle'); if(b) b.click(); }
+      say(t().actFx(on)); return `effects=${on ? 'on' : 'off'}`;
+    }
+    case 'go_to': {
+      const el = SAI_SECTIONS.includes(args.section) && $(args.section);
+      if(!el || el.hidden) break;
+      el.scrollIntoView({behavior: 'smooth'}); say(t().actGoto(esc(args.section))); return `go_to=${args.section}`;
+    }
+    case 'open_contacts': {
+      const link = document.querySelector('nav a[href="#contacts"]');
+      if(!link) break;
+      link.click(); say(t().actContacts); return 'contacts';
+    }
+    case 'open_room': {
+      const r = String(args.room || '');
+      if(!lairApi || !ROOM_NAMES.includes(r)) break;
+      if(lairApi.hasRoom(r)){ say(t().actRoom(esc(r))); setTimeout(() => lairApi.enter(r), 400); return `open_room=${r}`; }
+      lairApi.deny(ROOM_NAMES.indexOf(r)); say(t().actDenied(esc(r))); return `room ${r} denied`;
+    }
+  }
+  say(t().actFailed(esc(String((a && a.action) || '?'))));
+  return null;
+}
+
 async function saiAsk(text){
   saiHistory.push({role: 'user', content: text});
   while(saiHistory.length > SAI_KEEP) saiHistory.shift();
@@ -195,7 +250,8 @@ async function saiAsk(text){
   out.appendChild(div); out.scrollTop = out.scrollHeight;
   const ctrl = new AbortController();
   saiBusy = ctrl;
-  let answer = '';
+  let answer = '', raw = '', ran = 0;
+  const did = [];
   try{
     const r = await fetch(linkGet() + '/sai/chat', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -215,11 +271,26 @@ async function saiAsk(text){
     for(;;){
       const {value, done} = await reader.read();
       if(done) break;
-      answer += dec.decode(value, {stream: true});
+      raw += dec.decode(value, {stream: true});
+      const parts = raw.split(SAI_MARK);
+      answer = parts.filter((_, i) => i % 2 === 0).join('');
       div.innerHTML = mdLite(answer.replace(/^\s+/, ''));
+      // run each action once, as soon as its closing marker has arrived
+      for(let i = 1; i < parts.length - 1; i += 2){
+        const n = (i + 1) / 2;
+        if(n <= ran) continue;
+        ran = n;
+        let act = null;
+        try{ act = JSON.parse(parts[i]); }catch(e){}
+        const res = saiAction(act);
+        if(res) did.push(res);
+      }
       out.scrollTop = out.scrollHeight;
     }
     answer = answer.trim();
+    if(!answer && did.length){ div.remove(); }
+    // the model gets to know what the site actually did
+    if(did.length) answer = (answer ? answer + ' ' : '') + `[выполнено сайтом: ${did.join(', ')}]`;
     if(answer) saiHistory.push({role: 'assistant', content: answer.length > SAI_ANSWER_KEEP ? answer.slice(0, SAI_ANSWER_KEEP) + ' …' : answer});
     else saiHistory.pop();
   }catch(e){
