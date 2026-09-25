@@ -67,6 +67,7 @@ const TEXT = {
     saiExit: '<dim>разговор с SAI завершён</dim>',
     saiReset: '<dim>SAI: разговор забыт</dim>',
     saiAborted: '<dim>[ответ прерван]</dim>',
+    saiTooLong: (n, max) => `<err>SAI: слишком длинное сообщение — ${n} / ${max} символов.</err> <dim>Разбейте на части.</dim>`,
     saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'имя пользователя:',
     loginPass: 'пароль:',
@@ -120,6 +121,7 @@ const TEXT = {
     saiExit: '<dim>left the SAI conversation</dim>',
     saiReset: '<dim>SAI: conversation forgotten</dim>',
     saiAborted: '<dim>[answer interrupted]</dim>',
+    saiTooLong: (n, max) => `<err>SAI: message too long — ${n} / ${max} characters.</err> <dim>Split it into parts.</dim>`,
     saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'username:',
     loginPass: 'password:',
@@ -155,6 +157,15 @@ let linkState = null; // null = not configured, else {ok, version}
 let saiMode = false, saiBusy = null; // saiBusy = AbortController while answering
 const saiHistory = [];
 const SAI_KEEP = 20;
+// Mirrors the backend limits: the new message is checked here before it is
+// sent (no model call for junk); old answers are cut before they go back
+// into the history, so one huge answer can't jam the conversation.
+const SAI_USER_MAX = 2000, SAI_ANSWER_KEEP = 4000;
+function saiTooLong(text){
+  if(text.length <= SAI_USER_MAX) return false;
+  say(t().saiTooLong(text.length, SAI_USER_MAX));
+  return true;
+}
 
 async function saiCheck(){
   const url = linkGet();
@@ -192,7 +203,11 @@ async function saiAsk(text){
     });
     if(!r.ok){
       let msg = 'HTTP ' + r.status;
-      try{ msg = (await r.json()).detail || msg; }catch(e){}
+      try{
+        const d = (await r.json()).detail;
+        if(typeof d === 'string') msg = d;
+        else if(Array.isArray(d) && d.length) msg = d.map(x => x.msg || JSON.stringify(x)).join('; ');
+      }catch(e){}
       div.remove(); saiHistory.pop(); say(t().saiError(esc(String(msg)))); return;
     }
     const reader = r.body.getReader(), dec = new TextDecoder();
@@ -205,7 +220,7 @@ async function saiAsk(text){
       out.scrollTop = out.scrollHeight;
     }
     answer = answer.trim();
-    if(answer) saiHistory.push({role: 'assistant', content: answer});
+    if(answer) saiHistory.push({role: 'assistant', content: answer.length > SAI_ANSWER_KEEP ? answer.slice(0, SAI_ANSWER_KEEP) + ' …' : answer});
     else saiHistory.pop();
   }catch(e){
     if(ctrl.signal.aborted){ if(!answer) div.remove(); say(t().saiAborted); saiHistory.pop(); }
@@ -219,7 +234,7 @@ async function runSai(arg){
   if(!linkGet()){ say(t().sai); return; }
   const model = await saiCheck();
   if(!model) return;
-  if(arg){ await saiAsk(arg); return; }
+  if(arg){ if(!saiTooLong(arg)) await saiAsk(arg); return; }
   say(t().saiReady(esc(model)));
   saiPrompt(true);
 }
@@ -375,6 +390,10 @@ function feedLogin(value){
   }
 }
 
+input.addEventListener('input', () => {
+  input.classList.toggle('is-over', saiMode && input.value.length > SAI_USER_MAX);
+});
+
 input.addEventListener('keydown', e => {
   if(loginStep && (e.key === 'Escape' || (e.key === 'c' && e.ctrlKey))){
     e.preventDefault(); e.stopPropagation(); input.value = ''; input.disabled = false; endLogin(t().loginCancel); return;
@@ -387,8 +406,11 @@ input.addEventListener('keydown', e => {
   }
   if(saiMode && e.key === 'Enter'){
     e.preventDefault();
-    const v = input.value.trim(); input.value = '';
+    const v = input.value.trim();
     if(!v || saiBusy) return;
+    // too long: keep it in the input so it can be shortened, don't echo it
+    if(saiTooLong(v)) return;
+    input.value = ''; input.classList.remove('is-over');
     print(`<span class="t-cmd"><b>sai&gt;</b> ${esc(v)}</span>`);
     if(v === 'exit' || v === 'quit'){ saiPrompt(false); say(t().saiExit); return; }
     if(v === 'reset'){ saiHistory.length = 0; say(t().saiReset); return; }

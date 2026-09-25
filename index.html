@@ -382,6 +382,7 @@ html.room-open,html.room-open body{overflow:hidden}
 .term-line{display:flex;align-items:center;gap:10px;padding:10px 14px 12px;cursor:text}
 .term-prompt{color:var(--t-accent2);white-space:nowrap}
 .term-in{flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;font:inherit;caret-color:var(--t-accent)}
+.term-in.is-over{color:#ff6b6b}
 .term.is-switching{animation:termGlitch .7s steps(5) 1}
 @keyframes termGlitch{0%,100%{filter:none;transform:none}20%{filter:hue-rotate(90deg) saturate(2);transform:translateX(-3px)}40%{filter:brightness(1.8);transform:translateX(3px) skewX(-2deg)}60%{filter:hue-rotate(-60deg);transform:translateX(-2px)}80%{filter:brightness(.6);transform:none}}
 .term.is-reward{animation:termReward 1.2s ease-out 1}
