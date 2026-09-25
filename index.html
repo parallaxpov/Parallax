@@ -344,17 +344,44 @@ html.room-open,html.room-open body{overflow:hidden}
   text-shadow:0 0 6px #000,0 0 14px rgba(0,240,255,.7)}
 .room-zoom-black{position:absolute;inset:0;z-index:4;background:#000;opacity:0}
 
-/* Post console */
-.lair-term{margin-top:56px;border:1px solid rgba(236,72,153,.25);background:rgba(5,3,10,.85);box-shadow:0 0 28px rgba(139,92,246,.12);font-family:var(--mono);font-size:13px;line-height:1.65}
-.lt-bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid rgba(236,72,153,.18);color:rgba(236,72,153,.7);font-size:11px;letter-spacing:.16em}
-.lt-dots{display:flex;gap:6px}.lt-dots i{width:8px;height:8px;border-radius:50%;background:rgba(236,72,153,.35)}
+/* Site terminal (terminal.js) — docked bottom-left, ~ to toggle. Two
+   profiles share the markup; data-profile switches the palette:
+   guest = portfolio (cyan), post = lair (magenta/violet). */
+.term,.term-launch{--t-accent:var(--cyan);--t-accent2:rgba(0,229,204,.75);--t-border:rgba(0,229,204,.28);--t-bg:rgba(8,8,16,.96);--t-glow:rgba(0,229,204,.12);--t-cmd:#d4f0ec}
+.term[data-profile="post"],.term-launch[data-profile="post"]{--t-accent:#ec4899;--t-accent2:rgba(236,72,153,.85);--t-border:rgba(236,72,153,.3);--t-bg:rgba(10,6,18,.96);--t-glow:rgba(139,92,246,.2);--t-cmd:#e9d5ff}
+.term-launch{position:fixed;left:16px;bottom:16px;z-index:96;display:flex;align-items:center;gap:8px;padding:8px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--t-accent2);background:var(--t-bg);border:1px solid var(--t-border);box-shadow:0 0 16px var(--t-glow);cursor:pointer;transition:border-color .2s,box-shadow .2s,color .2s}
+.term-launch span{color:var(--t-accent);font-weight:700}
+.term-launch em{font-style:normal}
+.term-launch:hover,.term-launch:focus-visible,.term-launch[aria-expanded="true"]{border-color:var(--t-accent);box-shadow:0 0 22px var(--t-glow);outline:none}
+.term-launch.is-pulse{animation:termPulse 1.1s ease-in-out 3}
+@keyframes termPulse{0%,100%{box-shadow:0 0 16px var(--t-glow)}50%{box-shadow:0 0 26px rgba(236,72,153,.9),0 0 40px rgba(0,240,255,.4);color:#fff}}
+.term{position:fixed;left:16px;bottom:62px;z-index:96;width:min(480px,calc(100vw - 32px));height:min(360px,calc(100vh - 140px));display:flex;flex-direction:column;
+  background:var(--t-bg);border:1px solid var(--t-border);box-shadow:0 0 32px var(--t-glow),0 16px 40px rgba(0,0,0,.6);backdrop-filter:blur(10px);
+  font-family:var(--mono);font-size:13px;line-height:1.6;
+  opacity:0;visibility:hidden;transform:translateY(12px) scale(.98);transform-origin:bottom left;transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
+.term.is-open{opacity:1;visibility:visible;transform:none;transition:opacity .2s ease,transform .2s ease,visibility 0s}
+.term-bar{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--t-border);color:var(--t-accent2);font-size:11px;letter-spacing:.16em}
+.term-bar #termTitle{flex:1}
+.term-key{border:1px solid var(--t-border);padding:0 6px;font-size:10px;opacity:.7}
+.term-close{background:none;border:0;color:var(--text-mid);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+.term-close:hover,.term-close:focus-visible{color:var(--t-accent);outline:none}
+.lt-dots{display:flex;gap:6px}.lt-dots i{width:8px;height:8px;border-radius:50%}
 .lt-dots i:first-child{background:#ff4d4d}.lt-dots i:nth-child(2){background:#f59e0b}.lt-dots i:nth-child(3){background:#22c55e}
-.lt-out{padding:14px 16px 0;max-height:320px;overflow-y:auto;color:#d4f0ec;white-space:pre-wrap;word-break:break-word}
-.lt-out .lt-cmd{color:#e9d5ff}.lt-out .lt-cmd b{color:rgba(236,72,153,.85);font-weight:400}
-.lt-out .lt-dim{color:var(--text-dim)}.lt-out .lt-ok{color:#22c55e}.lt-out .lt-err{color:#ff6b6b}.lt-out .lt-acc{color:var(--cyan)}
-.lt-line{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;cursor:text}
-.lt-prompt{color:rgba(236,72,153,.85);white-space:nowrap}
-.lt-in{flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;font:inherit;caret-color:var(--cyan)}
+.term-out{flex:1;overflow-y:auto;padding:12px 14px 0;color:#d4f0ec;white-space:pre-wrap;word-break:break-word}
+.term-out .t-cmd{color:var(--t-cmd)}.term-out .t-cmd b{color:var(--t-accent2);font-weight:400}
+.term-out .t-dim{color:var(--text-dim)}.term-out .t-ok{color:#22c55e}.term-out .t-err{color:#ff6b6b}.term-out .t-acc{color:var(--t-accent)}
+.term-line{display:flex;align-items:center;gap:10px;padding:10px 14px 12px;cursor:text}
+.term-prompt{color:var(--t-accent2);white-space:nowrap}
+.term-in{flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;font:inherit;caret-color:var(--t-accent)}
+.term.is-switching{animation:termGlitch .7s steps(5) 1}
+@keyframes termGlitch{0%,100%{filter:none;transform:none}20%{filter:hue-rotate(90deg) saturate(2);transform:translateX(-3px)}40%{filter:brightness(1.8);transform:translateX(3px) skewX(-2deg)}60%{filter:hue-rotate(-60deg);transform:translateX(-2px)}80%{filter:brightness(.6);transform:none}}
+.term.is-reward{animation:termReward 1.2s ease-out 1}
+@keyframes termReward{0%{box-shadow:0 0 0 rgba(34,197,94,0)}20%{box-shadow:0 0 36px rgba(34,197,94,.7),0 0 0 1px #22c55e}100%{box-shadow:0 0 32px var(--t-glow),0 16px 40px rgba(0,0,0,.6)}}
+@media (max-width:600px){
+  .term{left:8px;right:8px;width:auto;bottom:56px;height:min(60vh,420px)}
+  .term-launch{left:8px;bottom:8px}
+}
 
 @media (prefers-reduced-motion: reduce){.feed-screen img,.feed-screen::after,.feed-grain,.lair-post .lp-dot,.feed-rec i{animation:none!important}}
 body.fx-off .feed-grain,body.fx-off .feed-screen::after{display:none}
@@ -970,17 +997,19 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         <figcaption><span class="feed-sector">SECTOR 0x03 — RENDER</span><span class="feed-sub" data-i18n="room_render">пространство 3D-художника</span></figcaption>
       </figure>
     </div>
-    <!-- Post console: a small scripted terminal (commands in lair.js).
-         A stub for now; later the place for SAI (PLAN.md). -->
-    <div class="lair-term" id="lairTerm">
-      <div class="lt-bar"><span class="lt-dots"><i></i><i></i><i></i></span>POST_CONSOLE · tty0</div>
-      <div class="lt-out" id="lairTermOut" aria-live="polite"></div>
-      <label class="lt-line"><span class="lt-prompt">guest@lair:~$</span><input class="lt-in" id="lairTermIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal"></label>
-    </div>
   </div>
 </section>
 
 <div class="room-view" id="roomView" hidden aria-hidden="true"></div>
+
+<!-- Site terminal (terminal.js). maintenance note: the terminal still
+     answers to "parallax --reveal" -->
+<button class="term-launch" id="termLaunch" type="button" aria-controls="termPanel" aria-expanded="false" data-profile="guest"><span>&gt;_</span><em id="termLaunchLabel">GUEST_TERMINAL</em></button>
+<div class="term" id="termPanel" aria-hidden="true" data-profile="guest" role="dialog" aria-label="terminal">
+  <div class="term-bar"><span class="lt-dots"><i></i><i></i><i></i></span><span id="termTitle">GUEST_TERMINAL · tty0</span><span class="term-key">~</span><button class="term-close" id="termClose" type="button" aria-label="×">×</button></div>
+  <div class="term-out" id="termOut" aria-live="polite"></div>
+  <label class="term-line"><span class="term-prompt" id="termPrompt">guest@parallax:~$</span><input class="term-in" id="termIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal"></label>
+</div>
 
 <script>
 const T={
@@ -1634,6 +1663,7 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
     if(!drawer||!grid||!body||document.body.classList.contains('lair-open'))return;
     body.appendChild(grid);
     document.body.classList.add('lair-open');
+    document.dispatchEvent(new CustomEvent('lair:open')); // terminal.js → POST_CONSOLE
     // After the page has glided down, point at where the contacts went.
     setTimeout(()=>{
       document.querySelectorAll('nav a[href="#contacts"]').forEach(a=>a.classList.add('is-moved'));
@@ -1771,5 +1801,6 @@ const st=document.getElementById('statusTerminal');if(st)so.observe(st);
   upd();
 })();
 </script>
+<script type="module" src="terminal.js"></script>
 </body>
 </html>
