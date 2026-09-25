@@ -32,7 +32,7 @@ function startFeeds(section){
   section.querySelectorAll('.lair-feed').forEach(feed => {
     feed.tabIndex = 0;
     feed.setAttribute('role', 'button');
-    const go = () => { const id = feed.dataset.room; if(id && ROOMS[id]) openRoom(id); else denyAccess(feed); };
+    const go = () => { const id = feed.dataset.room; if(id && ROOMS[id]) enterRoom(id); else denyAccess(feed); };
     feed.addEventListener('click', go);
     feed.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
   });
@@ -84,7 +84,7 @@ const CONNECT_MIN_MS = 450; // "CONNECTING…" holds at least this long
 const BLACK_MS = 180;
 const CRT_MS = 450;       // room switches on like a CRT: a line opening up
 const cache = {};
-let current = null, pushed = false, busy = false;
+let current = null, busy = false;
 const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -160,13 +160,48 @@ function zoomLayer(img, cam){
 const rectBox = r => ({left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px'});
 const fullBox = () => ({left: '0px', top: '0px', width: window.innerWidth + 'px', height: window.innerHeight + 'px'});
 
+// The URL hash is the single source of truth for which room is open.
+// Clicks, the back button, Esc and browser back/forward only change the
+// hash (or ask to); sync() then brings the page in line with it. A
+// transition in progress is never interrupted — but whatever was asked for
+// meanwhile isn't dropped either: every transition ends with another
+// sync(), so the page always settles on what the URL says.
+function wantedRoom(){
+  const h = location.hash.slice(1);
+  return ROOMS[h] && feedOf(h) ? h : null;
+}
+
+// After the page has settled on "no room", nothing from a transition may
+// linger: feeds back on signal, no zoom layer, room view hidden.
+function resetWatchRoom(){
+  const view = document.getElementById('roomView');
+  if(view && !view.hidden) hideRoom(view);
+  document.querySelectorAll('.room-zoom').forEach(l => l.remove());
+  setOtherFeeds(null, false);
+}
+
+let jumpPending = false; // the hash moved to another site section (nav link)
+function sync(){
+  if(busy) return; // the running transition calls sync() again when done
+  const want = wantedRoom();
+  if(want === current){ if(!current) resetWatchRoom(); return; }
+  if(current){ const instant = jumpPending; jumpPending = false; closeRoom({instant}); }
+  else openRoom(want, {instant: true});
+}
+
+// Feed click: push the room into history and play the push-in.
+function enterRoom(id){
+  if(busy || current || wantedRoom()) return;
+  history.pushState({room: id}, '', '#' + id);
+  openRoom(id);
+}
+
 export async function openRoom(id, {instant = false} = {}){
   const feed = feedOf(id), view = document.getElementById('roomView');
   if(busy || current || !feed || !view || !ROOMS[id]) return;
   busy = true;
   const html = loadRoom(id);
   const img = feed.querySelector('img') ? feed.querySelector('img').getAttribute('src') : '';
-  if(!instant){ history.pushState({room: id}, '', '#' + id); pushed = true; }
   try{
     if(instant || reduce()){
       fillRoom(view, id, await html, img);
@@ -194,13 +229,13 @@ export async function openRoom(id, {instant = false} = {}){
     current = id;
   } catch(err){
     console.error('[lair] room failed to open', err);
-    setOtherFeeds(null, false);
-    document.querySelectorAll('.room-zoom').forEach(l => l.remove());
-    hideRoom(view);
-    if(pushed){ pushed = false; history.replaceState(null, '', location.pathname + location.search); }
+    current = null;
+    resetWatchRoom();
+    if(wantedRoom() === id) history.replaceState(null, '', location.pathname + location.search);
     flashMsg(feed, 'SIGNAL LOST', 1500);
   } finally {
     busy = false;
+    sync();
   }
 }
 
@@ -212,8 +247,7 @@ export async function closeRoom({instant = false} = {}){
   current = null;
   try{
     if(instant || reduce() || !feed){
-      hideRoom(view);
-      setOtherFeeds(null, false);
+      resetWatchRoom();
     } else {
       const img = feed.querySelector('img') ? feed.querySelector('img').getAttribute('src') : '';
       const layer = zoomLayer(img, '');
@@ -235,31 +269,34 @@ export async function closeRoom({instant = false} = {}){
       await layer.animate([{opacity: 1}, {opacity: 0}], {duration: 200, fill: 'forwards'}).finished;
       layer.remove();
     }
+  } catch(err){
+    console.error('[lair] room failed to close cleanly', err);
+    resetWatchRoom();
   } finally {
     busy = false;
+    sync();
   }
 }
 
-// "← WATCH ROOM": step back in history if we pushed the room there (so the
-// browser's own back button and ours behave the same), otherwise just close.
+// "← WATCH ROOM" / Esc: ask for "no room". If this history entry is the one
+// our feed click pushed, step back (so our button and the browser's back
+// button behave the same); otherwise — direct entry — just drop the hash.
+// Either way it only changes the URL; sync() does the rest, now or as soon
+// as the running transition ends.
 function leaveRoom(){
-  if(pushed){ history.back(); return; }
+  if(!wantedRoom()) return;
+  if(history.state && history.state.room === wantedRoom()){ history.back(); return; }
   history.replaceState(null, '', location.pathname + location.search);
-  closeRoom();
+  sync();
 }
 
 window.addEventListener('hashchange', () => {
   const h = location.hash.slice(1);
-  if(current && h !== current){
-    pushed = false;
-    // jumping to another section of the site (nav link) → close at once so
-    // the jump lands; plain "back" → play the pull-back animation
-    const jump = h && document.getElementById(h) && !ROOMS[h];
-    closeRoom({instant: !!jump});
-  } else if(!current && ROOMS[h] && feedOf(h)){
-    openRoom(h, {instant: true});
-  }
+  // jumping to another section of the site (nav link) → close at once so
+  // the jump lands; plain "back" → play the pull-back animation
+  if(h && !ROOMS[h] && document.getElementById(h)) jumpPending = true;
+  sync();
 });
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape' && current && !document.querySelector('.contacts-drawer.is-open')) leaveRoom();
+  if(e.key === 'Escape' && wantedRoom() && !document.querySelector('.contacts-drawer.is-open')) leaveRoom();
 });
