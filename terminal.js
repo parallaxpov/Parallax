@@ -53,6 +53,11 @@ const TEXT = {
     booting: '<dim>Пост ещё загружается, повторите через секунду.</dim>',
     sai: '<dim>SAI: канал не установлен.</dim>\nМодуль ещё не подключён к посту — появится вместе с собственным хостингом.',
     sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
+    loginUser: 'имя пользователя:',
+    loginPass: 'пароль:',
+    loginAuth: 'аутентификация…',
+    loginOffline: '<err>auth server offline</err>\n<dim>Сервер авторизации появится вместе с собственным хостингом. Введённые данные никуда не отправлялись.</dim>',
+    loginCancel: '<dim>вход отменён</dim>',
     secret: w => `<ok>Congratulations! You found a secret!</ok>\n<dim>найдено: ${w}</dim>`,
     lost: '<err>!! connection lost</err>\n<dim>переключение канала…</dim>',
     unknown: c => `<err>${c}: команда не найдена.</err> Попробуйте <acc>help</acc>.`,
@@ -86,6 +91,11 @@ const TEXT = {
     booting: '<dim>The post is still booting, try again in a second.</dim>',
     sai: '<dim>SAI: no link established.</dim>\nThe module is not wired to the post yet — it comes with self-hosting.',
     sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
+    loginUser: 'username:',
+    loginPass: 'password:',
+    loginAuth: 'authenticating…',
+    loginOffline: '<err>auth server offline</err>\n<dim>The auth server comes with self-hosting. Nothing you typed was sent anywhere.</dim>',
+    loginCancel: '<dim>login cancelled</dim>',
     secret: w => `<ok>Congratulations! You found a secret!</ok>\n<dim>found in: ${w}</dim>`,
     lost: '<err>!! connection lost</err>\n<dim>switching channel…</dim>',
     unknown: c => `<err>${c}: command not found.</err> Try <acc>help</acc>.`,
@@ -96,6 +106,10 @@ let profile = 'guest';
 let lairApi = null;          // set by lair.js once the lair is mounted
 const cmdHistory = [];
 let hIdx = 0;
+// login (stub): while a prompt is active, Enter feeds it instead of run().
+// Nothing is checked or sent — there is no auth server on static hosting,
+// and a client-side check would only be fake security. See PLAN.md.
+let loginStep = null, loginUser = '';
 
 const siteLang = () => { try{ return (typeof lang !== 'undefined' && TEXT[lang]) ? lang : 'ru'; }catch(e){ return 'ru'; } };
 const t = () => TEXT[siteLang()];
@@ -114,6 +128,7 @@ const perProfile = v => (v && typeof v === 'object') ? v[profile] : v;
 
 function applyProfile(){
   const p = PROFILES[profile];
+  loginStep = null; loginUser = ''; input.type = 'text'; input.disabled = false;
   panel.dataset.profile = launch.dataset.profile = profile;
   $('termTitle').textContent = p.title + ' · tty0';
   $('termPrompt').textContent = p.prompt;
@@ -144,6 +159,7 @@ function run(raw){
   const [cmdRaw, ...args] = line.split(/\s+/);
   const cmd = cmdRaw.toLowerCase();
   if(cmd === 'sudo'){ say(T_.sudo); return; }
+  if(cmd === 'login'){ startLogin(); return; }
   if(!PROFILES[profile].cmds.includes(cmd) && !(cmd === 'cd' && profile === 'post') && cmd !== '?' && cmd !== 'cls'){
     say(T_.unknown(esc(cmdRaw))); return;
   }
@@ -181,7 +197,42 @@ function celebrate(){
   panel.classList.remove('is-reward'); void panel.offsetWidth; panel.classList.add('is-reward');
 }
 
+function setPrompt(text, secret){
+  $('termPrompt').textContent = text;
+  input.type = secret ? 'password' : 'text';
+}
+function startLogin(){
+  loginStep = 'user'; loginUser = '';
+  setPrompt(t().loginUser, false);
+}
+function endLogin(msg){
+  loginStep = null; loginUser = '';
+  setPrompt(PROFILES[profile].prompt, false);
+  if(msg) say(msg);
+}
+function feedLogin(value){
+  if(loginStep === 'user'){
+    loginUser = value.trim();
+    print(`<span class="t-cmd"><b>${esc(t().loginUser)}</b> ${esc(loginUser)}</span>`);
+    loginStep = 'pass';
+    setPrompt(t().loginPass, true);
+  } else if(loginStep === 'pass'){
+    // the password is only ever shown as dots and dropped right away
+    print(`<span class="t-cmd"><b>${esc(t().loginPass)}</b> ${'•'.repeat(Math.min(value.length, 16))}</span>`);
+    loginStep = 'wait';
+    setPrompt('', false);
+    input.disabled = true;
+    say(`<dim>${t().loginAuth}</dim>`);
+    setTimeout(() => { input.disabled = false; endLogin(t().loginOffline); input.focus({preventScroll: true}); }, 900);
+  }
+}
+
 input.addEventListener('keydown', e => {
+  if(loginStep && (e.key === 'Escape' || (e.key === 'c' && e.ctrlKey))){
+    e.preventDefault(); e.stopPropagation(); input.value = ''; input.disabled = false; endLogin(t().loginCancel); return;
+  }
+  if(loginStep && e.key === 'Enter'){ e.preventDefault(); const v = input.value; input.value = ''; feedLogin(v); return; }
+  if(loginStep && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Tab')){ e.preventDefault(); return; }
   if(e.key === 'Enter'){ e.preventDefault(); run(input.value); input.value = ''; }
   else if(e.key === 'ArrowUp'){ if(hIdx > 0){ hIdx--; input.value = cmdHistory[hIdx]; } e.preventDefault(); }
   else if(e.key === 'ArrowDown'){ if(hIdx < cmdHistory.length){ hIdx++; input.value = cmdHistory[hIdx] || ''; } e.preventDefault(); }
