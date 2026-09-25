@@ -216,7 +216,7 @@ async function saiAsk(text){
       const {value, done} = await reader.read();
       if(done) break;
       answer += dec.decode(value, {stream: true});
-      div.textContent = answer.replace(/^\s+/, '');
+      div.innerHTML = mdLite(answer.replace(/^\s+/, ''));
       out.scrollTop = out.scrollHeight;
     }
     answer = answer.trim();
@@ -259,6 +259,23 @@ const siteLang = () => { try{ return (typeof lang !== 'undefined' && TEXT[lang])
 const t = () => TEXT[siteLang()];
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // tiny markup for answers: <acc>, <dim>, <ok>, <err> → styled spans
+// Minimal markdown for SAI answers. The text is escaped FIRST, so the model
+// can never inject HTML; only these patterns become tags: ``` blocks,
+// `code`, **bold**, # headings, and "* " / "- " list bullets.
+function mdLite(src){
+  const blocks = [];
+  let s = esc(src).replace(/```[^\n]*\n?([\s\S]*?)(```|$)/g, (m, code) => {
+    blocks.push(code.replace(/\n$/, ''));
+    return '\u0000' + (blocks.length - 1) + '\u0000';
+  });
+  s = s.split('\n').map(line => line
+    .replace(/^\s{0,3}#{1,6}\s+(.+)$/, '<b>$1</b>')
+    .replace(/^(\s*)[*-]\s+/, '$1• ')
+  ).join('\n');
+  s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>')
+       .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+  return s.replace(/\u0000(\d+)\u0000/g, (m, i) => `<pre class="t-code">${blocks[+i]}</pre>`);
+}
 const markup = s => s.replace(/<(acc|dim|ok|err)>/g, '<span class="t-$1">').replace(/<\/(acc|dim|ok|err)>/g, '</span>');
 
 function print(html){
