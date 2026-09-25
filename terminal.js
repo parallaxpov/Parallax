@@ -53,6 +53,13 @@ const TEXT = {
     booting: '<dim>Пост ещё загружается, повторите через секунду.</dim>',
     sai: '<dim>SAI: канал не установлен.</dim>\nМодуль ещё не подключён к посту — появится вместе с собственным хостингом.',
     sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
+    linkUsage: 'link — связь с бэкендом на вашем ПК.\n  <acc>link</acc>            — проверить связь\n  <acc>link</acc> <dim>&lt;адрес&gt;</dim>    — задать адрес (по умолчанию http://127.0.0.1:8787)\n  <acc>link off</acc>        — забыть адрес\n<dim>Адрес хранится только в этом браузере.</dim>',
+    linkChecking: u => `<dim>проверка ${u}…</dim>`,
+    linkOn: (u, v) => `<ok>link established</ok> · ${u}\n<dim>parallax-lair ${v}</dim>`,
+    linkOffline: u => `<err>link offline</err> · ${u}\n<dim>Бэкенд не отвечает: запущен ли start-lair.bat? Браузер мог спросить разрешение на доступ к устройствам — его нужно дать.</dim>`,
+    linkForgot: '<dim>адрес забыт, проверка связи отключена</dim>',
+    linkBad: '<err>адрес должен начинаться с http:// или https://</err>',
+    saiOnline: v => `<ok>link established</ok> · parallax-lair ${v}\n<dim>SAI: модуль ещё не установлен на сервере.</dim>`,
     loginUser: 'имя пользователя:',
     loginPass: 'пароль:',
     loginAuth: 'аутентификация…',
@@ -91,6 +98,13 @@ const TEXT = {
     booting: '<dim>The post is still booting, try again in a second.</dim>',
     sai: '<dim>SAI: no link established.</dim>\nThe module is not wired to the post yet — it comes with self-hosting.',
     sudo: '<err>guest is not in the sudoers file. This incident will be reported.</err>',
+    linkUsage: 'link — connection to the backend on your PC.\n  <acc>link</acc>            — check the link\n  <acc>link</acc> <dim>&lt;address&gt;</dim>  — set the address (default http://127.0.0.1:8787)\n  <acc>link off</acc>        — forget the address\n<dim>The address is kept in this browser only.</dim>',
+    linkChecking: u => `<dim>checking ${u}…</dim>`,
+    linkOn: (u, v) => `<ok>link established</ok> · ${u}\n<dim>parallax-lair ${v}</dim>`,
+    linkOffline: u => `<err>link offline</err> · ${u}\n<dim>The backend doesn't answer: is start-lair.bat running? The browser may have asked for permission to access devices — it has to be allowed.</dim>`,
+    linkForgot: '<dim>address forgotten, link checks off</dim>',
+    linkBad: '<err>the address must start with http:// or https://</err>',
+    saiOnline: v => `<ok>link established</ok> · parallax-lair ${v}\n<dim>SAI: the module is not installed on the server yet.</dim>`,
     loginUser: 'username:',
     loginPass: 'password:',
     loginAuth: 'authenticating…',
@@ -110,6 +124,31 @@ let hIdx = 0;
 // Nothing is checked or sent — there is no auth server on static hosting,
 // and a client-side check would only be fake security. See PLAN.md.
 let loginStep = null, loginUser = '';
+
+// link: the owner's own backend (parallax-backend) on their PC. The address
+// lives only in this browser (localStorage), never in the public code, and
+// nothing is probed until the owner has run `link` once — so visitors'
+// browsers never try to reach anything on their own machines.
+const LINK_KEY = 'prx-link', LINK_DEFAULT = 'http://127.0.0.1:8787';
+const linkGet = () => { try{ return localStorage.getItem(LINK_KEY); }catch(e){ return null; } };
+const linkSet = v => { try{ v ? localStorage.setItem(LINK_KEY, v) : localStorage.removeItem(LINK_KEY); }catch(e){} };
+let linkState = null; // null = not configured, else {ok, version}
+async function probeLink(){
+  const url = linkGet();
+  const dot = $('termLink');
+  if(!url){ linkState = null; dot.hidden = true; return null; }
+  dot.hidden = false; dot.className = 'term-link is-wait';
+  try{
+    const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 2500);
+    const r = await fetch(url + '/health', {cache: 'no-store', signal: ctrl.signal});
+    clearTimeout(tm);
+    const j = await r.json();
+    linkState = {ok: r.ok && j.status === 'online', version: j.version || '?'};
+  }catch(e){ linkState = {ok: false}; }
+  dot.className = 'term-link ' + (linkState.ok ? 'is-on' : 'is-off');
+  dot.title = linkState.ok ? 'link established' : 'link offline';
+  return linkState;
+}
 
 const siteLang = () => { try{ return (typeof lang !== 'undefined' && TEXT[lang]) ? lang : 'ru'; }catch(e){ return 'ru'; } };
 const t = () => TEXT[siteLang()];
@@ -137,11 +176,27 @@ function applyProfile(){
   say(perProfile(t().hello));
 }
 
+async function runLink(arg){
+  const T_ = t();
+  if(arg && arg.toLowerCase() === 'off'){ linkSet(null); probeLink(); say(T_.linkForgot); return; }
+  if(arg){
+    if(!/^https?:\/\/[^\s]+$/i.test(arg)){ say(T_.linkBad); return; }
+    linkSet(arg.replace(/\/+$/, ''));
+  } else if(!linkGet()){
+    say(T_.linkUsage);
+    linkSet(LINK_DEFAULT);
+  }
+  const url = linkGet();
+  say(T_.linkChecking(esc(url)));
+  const st = await probeLink();
+  say(st && st.ok ? t().linkOn(esc(url), esc(st.version)) : t().linkOffline(esc(url)));
+}
+
 function setOpen(open){
   panel.classList.toggle('is-open', open);
   panel.setAttribute('aria-hidden', open ? 'false' : 'true');
   launch.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if(open){ launch.classList.remove('is-pulse'); setTimeout(() => input.focus({preventScroll: true}), 30); }
+  if(open){ probeLink(); launch.classList.remove('is-pulse'); setTimeout(() => input.focus({preventScroll: true}), 30); }
   else if(document.activeElement === input) input.blur();
 }
 const isOpen = () => panel.classList.contains('is-open');
@@ -160,6 +215,7 @@ function run(raw){
   const cmd = cmdRaw.toLowerCase();
   if(cmd === 'sudo'){ say(T_.sudo); return; }
   if(cmd === 'login'){ startLogin(); return; }
+  if(cmd === 'link'){ runLink(args[0]); return; }
   if(!PROFILES[profile].cmds.includes(cmd) && !(cmd === 'cd' && profile === 'post') && cmd !== '?' && cmd !== 'cls'){
     say(T_.unknown(esc(cmdRaw))); return;
   }
@@ -179,7 +235,10 @@ function run(raw){
     case 'date': print(esc(new Date().toString())); break;
     case 'clear': case 'cls': out.innerHTML = ''; break;
     case 'ls': say(T_.ls); break;
-    case 'sai': say(T_.sai); break;
+    case 'sai':
+      if(!linkGet()){ say(T_.sai); break; }
+      probeLink().then(st => say(st && st.ok ? t().saiOnline(esc(st.version)) : t().linkOffline(esc(linkGet()))));
+      break;
     case 'open': case 'cd': {
       const r = (args[0] || '').toLowerCase();
       if(!r){ say(T_.openUsage); break; }

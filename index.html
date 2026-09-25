@@ -364,6 +364,12 @@ html.room-open,html.room-open body{overflow:hidden}
 .term-bar{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--t-border);color:var(--t-accent2);font-size:11px;letter-spacing:.16em}
 .term-bar #termTitle{flex:1}
 .term-key{border:1px solid var(--t-border);padding:0 6px;font-size:10px;opacity:.7}
+/* link to the owner's backend (terminal.js `link`): shown only once configured */
+.term-link{width:8px;height:8px;border-radius:50%;background:#666}
+.term-link[hidden]{display:none}
+.term-link.is-wait{background:#f59e0b}
+.term-link.is-on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.term-link.is-off{background:#ff4d4d;box-shadow:0 0 6px rgba(255,77,77,.6)}
 .term-close{background:none;border:0;color:var(--text-mid);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
 .term-close:hover,.term-close:focus-visible{color:var(--t-accent);outline:none}
 .lt-dots{display:flex;gap:6px}.lt-dots i{width:8px;height:8px;border-radius:50%}
@@ -1006,7 +1012,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
      answers to "parallax --reveal" -->
 <button class="term-launch" id="termLaunch" type="button" aria-controls="termPanel" aria-expanded="false" data-profile="guest"><span>&gt;_</span><em id="termLaunchLabel">GUEST_TERMINAL</em></button>
 <div class="term" id="termPanel" aria-hidden="true" data-profile="guest" role="dialog" aria-label="terminal">
-  <div class="term-bar"><span class="lt-dots"><i></i><i></i><i></i></span><span id="termTitle">GUEST_TERMINAL · tty0</span><span class="term-key">~</span><button class="term-close" id="termClose" type="button" aria-label="×">×</button></div>
+  <div class="term-bar"><span class="lt-dots"><i></i><i></i><i></i></span><span id="termTitle">GUEST_TERMINAL · tty0</span><span class="term-link" id="termLink" hidden></span><span class="term-key">~</span><button class="term-close" id="termClose" type="button" aria-label="×">×</button></div>
   <div class="term-out" id="termOut" aria-live="polite"></div>
   <label class="term-line"><span class="term-prompt" id="termPrompt">guest@parallax:~$</span><input class="term-in" id="termIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal"></label>
 </div>
