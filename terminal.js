@@ -60,6 +60,14 @@ const TEXT = {
     linkForgot: '<dim>адрес забыт, проверка связи отключена</dim>',
     linkBad: '<err>адрес должен начинаться с http:// или https://</err>',
     saiOnline: v => `<ok>link established</ok> · parallax-lair ${v}\n<dim>SAI: модуль ещё не установлен на сервере.</dim>`,
+    saiReady: m => `<ok>SAI online</ok> · модель ${m}\n<dim>Режим разговора: пишите вопросы. <acc>exit</acc> или Esc — выйти, <acc>reset</acc> — забыть разговор.</dim>`,
+    saiNoModel: (m, list) => `<err>модель ${m} не найдена в Ollama.</err>\n<dim>Установленные: ${list || '—'}. Укажите имя в SAI_MODEL (.env бэкенда) и перезапустите.</dim>`,
+    saiModelOffline: '<err>Ollama не отвечает.</err> <dim>Запущена ли Ollama на ПК?</dim>',
+    saiOldBackend: '<err>бэкенд без модуля SAI</err> <dim>— обновите parallax-backend и перезапустите start-lair.bat.</dim>',
+    saiExit: '<dim>разговор с SAI завершён</dim>',
+    saiReset: '<dim>SAI: разговор забыт</dim>',
+    saiAborted: '<dim>[ответ прерван]</dim>',
+    saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'имя пользователя:',
     loginPass: 'пароль:',
     loginAuth: 'аутентификация…',
@@ -105,6 +113,14 @@ const TEXT = {
     linkForgot: '<dim>address forgotten, link checks off</dim>',
     linkBad: '<err>the address must start with http:// or https://</err>',
     saiOnline: v => `<ok>link established</ok> · parallax-lair ${v}\n<dim>SAI: the module is not installed on the server yet.</dim>`,
+    saiReady: m => `<ok>SAI online</ok> · model ${m}\n<dim>Chat mode: type your questions. <acc>exit</acc> or Esc — leave, <acc>reset</acc> — forget the conversation.</dim>`,
+    saiNoModel: (m, list) => `<err>model ${m} not found in Ollama.</err>\n<dim>Installed: ${list || '—'}. Set the name in SAI_MODEL (backend .env) and restart.</dim>`,
+    saiModelOffline: '<err>Ollama is not answering.</err> <dim>Is Ollama running on the PC?</dim>',
+    saiOldBackend: '<err>backend without the SAI module</err> <dim>— update parallax-backend and restart start-lair.bat.</dim>',
+    saiExit: '<dim>left the SAI conversation</dim>',
+    saiReset: '<dim>SAI: conversation forgotten</dim>',
+    saiAborted: '<dim>[answer interrupted]</dim>',
+    saiError: m => `<err>SAI: ${m}</err>`,
     loginUser: 'username:',
     loginPass: 'password:',
     loginAuth: 'authenticating…',
@@ -133,6 +149,80 @@ const LINK_KEY = 'prx-link', LINK_DEFAULT = 'http://127.0.0.1:8787';
 const linkGet = () => { try{ return localStorage.getItem(LINK_KEY); }catch(e){ return null; } };
 const linkSet = v => { try{ v ? localStorage.setItem(LINK_KEY, v) : localStorage.removeItem(LINK_KEY); }catch(e){} };
 let linkState = null; // null = not configured, else {ok, version}
+
+// SAI chat (POST_CONSOLE): talks to the owner's backend, which streams the
+// local model's answer. The conversation lives in this tab only.
+let saiMode = false, saiBusy = null; // saiBusy = AbortController while answering
+const saiHistory = [];
+const SAI_KEEP = 20;
+
+async function saiCheck(){
+  const url = linkGet();
+  const st = await probeLink();
+  if(!st || !st.ok){ say(t().linkOffline(esc(url))); return false; }
+  try{
+    const r = await fetch(url + '/sai/status', {cache: 'no-store'});
+    if(r.status === 404){ say(t().saiOldBackend); return false; }
+    const j = await r.json();
+    if(!j.online){ say(t().saiModelOffline); return false; }
+    if(!j.installed){ say(t().saiNoModel(esc(j.model), esc((j.available || []).join(', ')))); return false; }
+    return j.model;
+  }catch(e){ say(t().linkOffline(esc(url))); return false; }
+}
+
+function saiPrompt(on){
+  saiMode = on;
+  $('termPrompt').textContent = on ? 'sai>' : PROFILES[profile].prompt;
+}
+
+async function saiAsk(text){
+  saiHistory.push({role: 'user', content: text});
+  while(saiHistory.length > SAI_KEEP) saiHistory.shift();
+  const div = document.createElement('div');
+  div.className = 't-sai is-wait';
+  div.textContent = '…';
+  out.appendChild(div); out.scrollTop = out.scrollHeight;
+  const ctrl = new AbortController();
+  saiBusy = ctrl;
+  let answer = '';
+  try{
+    const r = await fetch(linkGet() + '/sai/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({messages: saiHistory}), signal: ctrl.signal,
+    });
+    if(!r.ok){
+      let msg = 'HTTP ' + r.status;
+      try{ msg = (await r.json()).detail || msg; }catch(e){}
+      div.remove(); saiHistory.pop(); say(t().saiError(esc(String(msg)))); return;
+    }
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    div.classList.remove('is-wait'); div.textContent = '';
+    for(;;){
+      const {value, done} = await reader.read();
+      if(done) break;
+      answer += dec.decode(value, {stream: true});
+      div.textContent = answer.replace(/^\s+/, '');
+      out.scrollTop = out.scrollHeight;
+    }
+    answer = answer.trim();
+    if(answer) saiHistory.push({role: 'assistant', content: answer});
+    else saiHistory.pop();
+  }catch(e){
+    if(ctrl.signal.aborted){ if(!answer) div.remove(); say(t().saiAborted); saiHistory.pop(); }
+    else { div.remove(); saiHistory.pop(); say(t().saiError(esc(e.message || 'network error'))); }
+  }finally{
+    saiBusy = null;
+  }
+}
+
+async function runSai(arg){
+  if(!linkGet()){ say(t().sai); return; }
+  const model = await saiCheck();
+  if(!model) return;
+  if(arg){ await saiAsk(arg); return; }
+  say(t().saiReady(esc(model)));
+  saiPrompt(true);
+}
 async function probeLink(){
   const url = linkGet();
   const dot = $('termLink');
@@ -168,6 +258,8 @@ const perProfile = v => (v && typeof v === 'object') ? v[profile] : v;
 function applyProfile(){
   const p = PROFILES[profile];
   loginStep = null; loginUser = ''; input.type = 'text'; input.disabled = false;
+  if(saiBusy) saiBusy.abort();
+  saiMode = false;
   panel.dataset.profile = launch.dataset.profile = profile;
   $('termTitle').textContent = p.title + ' · tty0';
   $('termPrompt').textContent = p.prompt;
@@ -235,10 +327,7 @@ function run(raw){
     case 'date': print(esc(new Date().toString())); break;
     case 'clear': case 'cls': out.innerHTML = ''; break;
     case 'ls': say(T_.ls); break;
-    case 'sai':
-      if(!linkGet()){ say(T_.sai); break; }
-      probeLink().then(st => say(st && st.ok ? t().saiOnline(esc(st.version)) : t().linkOffline(esc(linkGet()))));
-      break;
+    case 'sai': runSai(line.slice(cmdRaw.length).trim()); break;
     case 'open': case 'cd': {
       const r = (args[0] || '').toLowerCase();
       if(!r){ say(T_.openUsage); break; }
@@ -291,6 +380,21 @@ input.addEventListener('keydown', e => {
     e.preventDefault(); e.stopPropagation(); input.value = ''; input.disabled = false; endLogin(t().loginCancel); return;
   }
   if(loginStep && e.key === 'Enter'){ e.preventDefault(); const v = input.value; input.value = ''; feedLogin(v); return; }
+  if(saiMode && e.key === 'Escape'){
+    e.preventDefault(); e.stopPropagation();
+    if(saiBusy) saiBusy.abort(); else { saiPrompt(false); say(t().saiExit); }
+    return;
+  }
+  if(saiMode && e.key === 'Enter'){
+    e.preventDefault();
+    const v = input.value.trim(); input.value = '';
+    if(!v || saiBusy) return;
+    print(`<span class="t-cmd"><b>sai&gt;</b> ${esc(v)}</span>`);
+    if(v === 'exit' || v === 'quit'){ saiPrompt(false); say(t().saiExit); return; }
+    if(v === 'reset'){ saiHistory.length = 0; say(t().saiReset); return; }
+    saiAsk(v);
+    return;
+  }
   if(loginStep && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Tab')){ e.preventDefault(); return; }
   if(e.key === 'Enter'){ e.preventDefault(); run(input.value); input.value = ''; }
   else if(e.key === 'ArrowUp'){ if(hIdx > 0){ hIdx--; input.value = cmdHistory[hIdx]; } e.preventDefault(); }
