@@ -344,6 +344,18 @@ html.room-open,html.room-open body{overflow:hidden}
   text-shadow:0 0 6px #000,0 0 14px rgba(0,240,255,.7)}
 .room-zoom-black{position:absolute;inset:0;z-index:4;background:#000;opacity:0}
 
+/* Post console */
+.lair-term{margin-top:56px;border:1px solid rgba(236,72,153,.25);background:rgba(5,3,10,.85);box-shadow:0 0 28px rgba(139,92,246,.12);font-family:var(--mono);font-size:13px;line-height:1.65}
+.lt-bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid rgba(236,72,153,.18);color:rgba(236,72,153,.7);font-size:11px;letter-spacing:.16em}
+.lt-dots{display:flex;gap:6px}.lt-dots i{width:8px;height:8px;border-radius:50%;background:rgba(236,72,153,.35)}
+.lt-dots i:first-child{background:#ff4d4d}.lt-dots i:nth-child(2){background:#f59e0b}.lt-dots i:nth-child(3){background:#22c55e}
+.lt-out{padding:14px 16px 0;max-height:320px;overflow-y:auto;color:#d4f0ec;white-space:pre-wrap;word-break:break-word}
+.lt-out .lt-cmd{color:#e9d5ff}.lt-out .lt-cmd b{color:rgba(236,72,153,.85);font-weight:400}
+.lt-out .lt-dim{color:var(--text-dim)}.lt-out .lt-ok{color:#22c55e}.lt-out .lt-err{color:#ff6b6b}.lt-out .lt-acc{color:var(--cyan)}
+.lt-line{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;cursor:text}
+.lt-prompt{color:rgba(236,72,153,.85);white-space:nowrap}
+.lt-in{flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;font:inherit;caret-color:var(--cyan)}
+
 @media (prefers-reduced-motion: reduce){.feed-screen img,.feed-screen::after,.feed-grain,.lair-post .lp-dot,.feed-rec i{animation:none!important}}
 body.fx-off .feed-grain,body.fx-off .feed-screen::after{display:none}
 
@@ -957,6 +969,13 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
         </div>
         <figcaption><span class="feed-sector">SECTOR 0x03 — RENDER</span><span class="feed-sub" data-i18n="room_render">пространство 3D-художника</span></figcaption>
       </figure>
+    </div>
+    <!-- Post console: a small scripted terminal (commands in lair.js).
+         A stub for now; later the place for SAI (PLAN.md). -->
+    <div class="lair-term" id="lairTerm">
+      <div class="lt-bar"><span class="lt-dots"><i></i><i></i><i></i></span>POST_CONSOLE · tty0</div>
+      <div class="lt-out" id="lairTermOut" aria-live="polite"></div>
+      <label class="lt-line"><span class="lt-prompt">guest@lair:~$</span><input class="lt-in" id="lairTermIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal"></label>
     </div>
   </div>
 </section>
