@@ -56,6 +56,7 @@ const TEXT = {
     linkUsage: 'link — связь с бэкендом на вашем ПК.\n  <acc>link</acc>            — проверить связь\n  <acc>link</acc> <dim>&lt;адрес&gt;</dim>    — задать адрес (по умолчанию http://127.0.0.1:8787)\n  <acc>link off</acc>        — забыть адрес\n<dim>Адрес хранится только в этом браузере.</dim>',
     linkChecking: u => `<dim>проверка ${u}…</dim>`,
     linkOn: (u, v) => `<ok>link established</ok> · ${u}\n<dim>parallax-lair ${v}</dim>`,
+    linkWaking: '<dim>бэкенд пока не ответил — возможно, ещё запускается. Жду…</dim>',
     linkOffline: u => `<err>link offline</err> · ${u}\n<dim>Бэкенд не отвечает: запущен ли start-lair.bat? Браузер мог спросить разрешение на доступ к устройствам — его нужно дать.</dim>`,
     linkForgot: '<dim>адрес забыт, проверка связи отключена</dim>',
     linkBad: '<err>адрес должен начинаться с http:// или https://</err>',
@@ -117,6 +118,7 @@ const TEXT = {
     linkUsage: 'link — connection to the backend on your PC.\n  <acc>link</acc>            — check the link\n  <acc>link</acc> <dim>&lt;address&gt;</dim>  — set the address (default http://127.0.0.1:8787)\n  <acc>link off</acc>        — forget the address\n<dim>The address is kept in this browser only.</dim>',
     linkChecking: u => `<dim>checking ${u}…</dim>`,
     linkOn: (u, v) => `<ok>link established</ok> · ${u}\n<dim>parallax-lair ${v}</dim>`,
+    linkWaking: '<dim>no answer from the backend yet — it may still be starting. Waiting…</dim>',
     linkOffline: u => `<err>link offline</err> · ${u}\n<dim>The backend doesn't answer: is start-lair.bat running? The browser may have asked for permission to access devices — it has to be allowed.</dim>`,
     linkForgot: '<dim>address forgotten, link checks off</dim>',
     linkBad: '<err>the address must start with http:// or https://</err>',
@@ -183,7 +185,14 @@ function saiTooLong(text){
 
 async function saiCheck(){
   const url = linkGet();
-  const st = await probeLink();
+  let st = await probeLink();
+  // right after start-lair.bat the server may still be starting: wait a
+  // little and ask again before calling it offline
+  for(let i = 0; i < 3 && !(st && st.ok); i++){
+    if(i === 0) say(t().linkWaking);
+    await new Promise(r => setTimeout(r, 1500));
+    st = await probeLink();
+  }
   if(!st || !st.ok){ say(t().linkOffline(esc(url))); return false; }
   try{
     const r = await fetch(url + '/sai/status', {cache: 'no-store'});
@@ -260,6 +269,64 @@ function saiAction(a){
   return null;
 }
 
+// Everything in SAI's answer is typed out at one pace — the model's words,
+// the program's «⚙» result lines and the quick replies of the backend's
+// command router alike, so code answers don't just pop up. Network chunks
+// arrive in bursts; the typer smooths them and speeds up when it falls
+// behind. Site actions run when the typing reaches them, so «✓ …» appears
+// right after the words that announce it.
+const SAI_CPS = 70;  // characters per second (more when lagging behind)
+function saiTyper(div, onAction){
+  let raw = '', typed = 0, ran = 0, carry = 0, last = 0, ended = false, stopped = false, timer = null, resolve;
+  const done = new Promise(r => { resolve = r; });
+  const clean = s => s.replace(/\[(?:выполнено сайтом|done by the site)[^\]]*\]/gi, '');  // old habit, never shown
+  function render(){
+    const parts = raw.split(SAI_MARK);
+    let left = typed, shown = '';
+    for(let i = 0; i < parts.length && left > 0; i += 2){
+      shown += parts[i].slice(0, left); left -= parts[i].length;
+    }
+    div.innerHTML = mdLite(clean(shown).replace(/^\s+/, ''));
+    out.scrollTop = out.scrollHeight;
+  }
+  function tick(){
+    timer = null;
+    if(stopped) return;
+    const now = performance.now(), dt = last ? Math.min(now - last, 250) : 16;
+    last = now;
+    const parts = raw.split(SAI_MARK);
+    const total = parts.reduce((n, p, i) => i % 2 === 0 ? n + p.length : n, 0);
+    carry += dt * SAI_CPS / 1000 * (1 + Math.max(0, total - typed) / 120);
+    let budget = Math.floor(carry), pos = 0, waiting = false;
+    carry -= budget;
+    for(let i = 0; i < parts.length; i++){
+      if(i % 2 === 0){
+        const end = pos + parts[i].length;
+        if(typed < end){
+          const take = Math.min(budget, end - typed);
+          typed += take; budget -= take;
+          if(typed < end){ waiting = true; break; }
+        }
+        pos = end;
+      } else {
+        if(i === parts.length - 1){ waiting = !ended; break; }  // action not complete (yet)
+        const n = (i + 1) / 2;
+        if(n > ran){ ran = n; let act = null; try{ act = JSON.parse(parts[i]); }catch(e){} onAction(act); }
+      }
+    }
+    render();
+    if(ended && !waiting && typed >= total){ resolve(true); return; }
+    timer = setTimeout(tick, 16);
+  }
+  return {
+    feed(chunk){ raw += chunk; if(!timer && !stopped) timer = setTimeout(tick, 0); },
+    end(){ ended = true; if(!timer && !stopped) timer = setTimeout(tick, 0); return done; },
+    stop(){ stopped = true; if(timer) clearTimeout(timer); timer = null; resolve(false); },
+    text(){ return clean(raw.split(SAI_MARK).filter((_, i) => i % 2 === 0).join('')).trim(); },
+    shown(){ return typed > 0; },
+  };
+}
+
 async function saiAsk(text){
   saiHistory.push({role: 'user', content: text});
   while(saiHistory.length > SAI_KEEP) saiHistory.shift();
@@ -268,9 +335,11 @@ async function saiAsk(text){
   div.textContent = '…';
   out.appendChild(div); out.scrollTop = out.scrollHeight;
   const ctrl = new AbortController();
-  saiBusy = ctrl;
-  let answer = '', raw = '', ran = 0;
+  saiBusy = ctrl;  // stays set while typing: Enter waits, Esc interrupts
   const did = [];
+  const typer = saiTyper(div, act => { const res = saiAction(act); if(res) did.push(res); });
+  ctrl.signal.addEventListener('abort', () => typer.stop());
+  const aborted = () => { if(!typer.shown()) div.remove(); div.classList.remove('is-typing'); say(t().saiAborted); saiHistory.pop(); };
   try{
     const r = await fetch(linkGet() + '/sai/chat', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -286,28 +355,15 @@ async function saiAsk(text){
       div.remove(); saiHistory.pop(); say(t().saiError(esc(String(msg)))); return;
     }
     const reader = r.body.getReader(), dec = new TextDecoder();
-    div.classList.remove('is-wait'); div.textContent = '';
+    div.classList.remove('is-wait'); div.classList.add('is-typing'); div.textContent = '';
     for(;;){
       const {value, done} = await reader.read();
       if(done) break;
-      raw += dec.decode(value, {stream: true});
-      const parts = raw.split(SAI_MARK);
-      answer = parts.filter((_, i) => i % 2 === 0).join('')
-        .replace(/\[(?:выполнено сайтом|done by the site)[^\]]*\]/gi, '');  // old habit, never shown
-      div.innerHTML = mdLite(answer.replace(/^\s+/, ''));
-      // run each action once, as soon as its closing marker has arrived
-      for(let i = 1; i < parts.length - 1; i += 2){
-        const n = (i + 1) / 2;
-        if(n <= ran) continue;
-        ran = n;
-        let act = null;
-        try{ act = JSON.parse(parts[i]); }catch(e){}
-        const res = saiAction(act);
-        if(res) did.push(res);
-      }
-      out.scrollTop = out.scrollHeight;
+      typer.feed(dec.decode(value, {stream: true}));
     }
-    answer = answer.trim();
+    if(!(await typer.end())){ aborted(); return; }
+    div.classList.remove('is-typing');
+    const answer = typer.text();
     if(!answer && did.length){ div.remove(); }
     // (what the site actually did reaches the model through siteState() on
     // the next message — no service notes in the history: the model copied
@@ -315,7 +371,8 @@ async function saiAsk(text){
     if(answer) saiHistory.push({role: 'assistant', content: answer.length > SAI_ANSWER_KEEP ? answer.slice(0, SAI_ANSWER_KEEP) + ' …' : answer});
     else saiHistory.pop();
   }catch(e){
-    if(ctrl.signal.aborted){ if(!answer) div.remove(); say(t().saiAborted); saiHistory.pop(); }
+    typer.stop();
+    if(ctrl.signal.aborted) aborted();
     else { div.remove(); saiHistory.pop(); say(t().saiError(esc(e.message || 'network error'))); }
   }finally{
     saiBusy = null;
@@ -353,14 +410,17 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&
 // tiny markup for answers: <acc>, <dim>, <ok>, <err> → styled spans
 // Minimal markdown for SAI answers. The text is escaped FIRST, so the model
 // can never inject HTML; only these patterns become tags: ``` blocks,
-// `code`, **bold**, # headings, and "* " / "- " list bullets.
+// `code`, **bold**, # headings, "* " / "- " list bullets, and the
+// program's own «⚙» / «⚠» lines (styled apart from the model's words).
 function mdLite(src){
   const blocks = [];
   let s = esc(src).replace(/```[^\n]*\n?([\s\S]*?)(```|$)/g, (m, code) => {
     blocks.push(code.replace(/\n$/, ''));
     return '\u0000' + (blocks.length - 1) + '\u0000';
   });
-  s = s.split('\n').map(line => line
+  s = s.split('\n').map(line => /^\s*⚙/.test(line) ? `<span class="t-tool">${line}</span>`
+    : /^\s*⚠/.test(line) ? `<span class="t-warn">${line}</span>`
+    : line
     .replace(/^\s{0,3}#{1,6}\s+(.+)$/, '<b>$1</b>')
     .replace(/^(\s*)[*-]\s+/, '$1• ')
   ).join('\n');

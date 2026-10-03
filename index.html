@@ -381,6 +381,9 @@ html.room-open,html.room-open body{overflow:hidden}
 .term-out .t-sai code{background:rgba(255,255,255,.06);padding:0 4px;color:var(--t-accent)}
 .term-out .t-sai .t-code{background:rgba(0,0,0,.35);border:1px solid var(--t-border);padding:8px 10px;margin:6px 0;white-space:pre;overflow-x:auto;font:inherit}
 .term-out .t-sai.is-wait{color:var(--text-dim);animation:recBlink 1s steps(1) infinite}
+.term-out .t-sai.is-typing::after{content:'▌';color:var(--t-accent);margin-left:1px;animation:recBlink 1s steps(1) infinite}
+.term-out .t-sai .t-tool{color:var(--text-dim)}
+.term-out .t-sai .t-warn{color:#f59e0b}
 .term-out .t-dim{color:var(--text-dim)}.term-out .t-ok{color:#22c55e}.term-out .t-err{color:#ff6b6b}.term-out .t-acc{color:var(--t-accent)}
 .term-line{display:flex;align-items:center;gap:10px;padding:10px 14px 12px;cursor:text}
 .term-prompt{color:var(--t-accent2);white-space:nowrap}
