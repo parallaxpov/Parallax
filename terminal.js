@@ -327,6 +327,18 @@ function saiTyper(div, onAction){
   };
 }
 
+// The owner's backend keeps a log of SAI's turns on their PC. The terminal
+// adds a random id per tab (to group a conversation) and, after each answer,
+// reports what the site itself did with it — only to that same local backend.
+const SAI_SESSION = Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+function saiReport(turn, events){
+  if(!turn || !events.length || !/^[a-f0-9]{12}$/.test(turn)) return;
+  fetch(linkGet() + '/sai/log', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({turn, session: SAI_SESSION, events: events.slice(0, 20)}),
+  }).catch(() => {});
+}
+
 async function saiAsk(text){
   saiHistory.push({role: 'user', content: text});
   while(saiHistory.length > SAI_KEEP) saiHistory.shift();
@@ -336,15 +348,24 @@ async function saiAsk(text){
   out.appendChild(div); out.scrollTop = out.scrollHeight;
   const ctrl = new AbortController();
   saiBusy = ctrl;  // stays set while typing: Enter waits, Esc interrupts
-  const did = [];
-  const typer = saiTyper(div, act => { const res = saiAction(act); if(res) did.push(res); });
+  const did = [], report = [];
+  let turn = null;
+  const typer = saiTyper(div, act => {
+    const res = saiAction(act);
+    if(res){ did.push(res); report.push({kind: / denied$/.test(res) ? 'denied' : 'action', detail: res.slice(0, 200)}); }
+    else report.push({kind: 'failed', detail: String((act && act.action) || '?').slice(0, 200)});
+  });
   ctrl.signal.addEventListener('abort', () => typer.stop());
-  const aborted = () => { if(!typer.shown()) div.remove(); div.classList.remove('is-typing'); say(t().saiAborted); saiHistory.pop(); };
+  const aborted = () => {
+    if(!typer.shown()) div.remove(); div.classList.remove('is-typing'); say(t().saiAborted); saiHistory.pop();
+    report.push({kind: 'aborted', detail: ''}); saiReport(turn, report);
+  };
   try{
     const r = await fetch(linkGet() + '/sai/chat', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({messages: saiHistory, state: siteState()}), signal: ctrl.signal,
+      body: JSON.stringify({messages: saiHistory, state: siteState(), session: SAI_SESSION}), signal: ctrl.signal,
     });
+    turn = r.headers.get('X-SAI-Turn');
     if(!r.ok){
       let msg = 'HTTP ' + r.status;
       try{
@@ -370,10 +391,14 @@ async function saiAsk(text){
     // them as text)
     if(answer) saiHistory.push({role: 'assistant', content: answer.length > SAI_ANSWER_KEEP ? answer.slice(0, SAI_ANSWER_KEEP) + ' …' : answer});
     else saiHistory.pop();
+    saiReport(turn, report);
   }catch(e){
     typer.stop();
     if(ctrl.signal.aborted) aborted();
-    else { div.remove(); saiHistory.pop(); say(t().saiError(esc(e.message || 'network error'))); }
+    else {
+      div.remove(); saiHistory.pop(); say(t().saiError(esc(e.message || 'network error')));
+      report.push({kind: 'error', detail: String(e.message || 'network error').slice(0, 200)}); saiReport(turn, report);
+    }
   }finally{
     saiBusy = null;
   }
