@@ -2,7 +2,7 @@
 // One engine, two profiles: GUEST_TERMINAL in the portfolio, POST_CONSOLE
 // once the lair is open (index.html fires `lair:open`). Each profile has its
 // own look, prompt and commands; later also its own AI context (SAI) and,
-// with self-hosting, an admin profile behind a real login — see PLAN.md.
+// with self-hosting, an admin profile behind a real login.
 // Everything here is public client-side code: profiles are UX, not access
 // control.
 
@@ -156,7 +156,7 @@ const cmdHistory = [];
 let hIdx = 0;
 // login (stub): while a prompt is active, Enter feeds it instead of run().
 // Nothing is checked or sent — there is no auth server on static hosting,
-// and a client-side check would only be fake security. See PLAN.md.
+// and a client-side check would only be fake security.
 let loginStep = null, loginUser = '';
 
 // link: the owner's own backend (parallax-backend) on their PC. The address
@@ -524,7 +524,7 @@ function run(raw){
   }
 }
 
-// Reward hook for found secrets. Sound + confetti come later (PLAN.md).
+// Reward hook for found secrets. Sound + confetti come later.
 function celebrate(){
   panel.classList.remove('is-reward'); void panel.offsetWidth; panel.classList.add('is-reward');
 }
