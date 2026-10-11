@@ -363,7 +363,10 @@ html.room-open,html.room-open body{overflow:hidden}
 .term.is-open{opacity:1;visibility:visible;transform:none;transition:opacity .2s ease,transform .2s ease,visibility 0s}
 .term-bar{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--t-border);color:var(--t-accent2);font-size:11px;letter-spacing:.16em}
 .term-bar #termTitle{flex:1}
-.term-key{border:1px solid var(--t-border);padding:0 6px;font-size:10px;opacity:.7}
+.term-key{background:none;border:1px solid var(--t-border);color:inherit;font:inherit;padding:0 6px;font-size:10px;opacity:.7;cursor:pointer;line-height:1.6}
+.term-key:hover,.term-key:focus-visible,.term-key[aria-pressed="true"]{opacity:1;border-color:var(--t-accent);color:var(--t-accent);outline:none}
+/* expanded: almost the whole page, for long answers (the ~ button, or by itself) */
+.term.is-max{top:72px;right:16px;width:auto;height:auto}
 /* link to the owner's backend (terminal.js `link`): shown only once configured */
 .term-link{width:8px;height:8px;border-radius:50%;background:#666}
 .term-link[hidden]{display:none}
@@ -379,7 +382,7 @@ html.room-open,html.room-open body{overflow:hidden}
 .term-out .t-sai{color:#e9d5ff;border-left:2px solid var(--t-accent);padding-left:10px;margin:4px 0 8px}
 .term-out .t-sai b{color:#fff;font-weight:600}
 .term-out .t-sai code{background:rgba(255,255,255,.06);padding:0 4px;color:var(--t-accent)}
-.term-out .t-sai .t-code{background:rgba(0,0,0,.35);border:1px solid var(--t-border);padding:8px 10px;margin:6px 0;white-space:pre;overflow-x:auto;font:inherit}
+.term-out .t-sai .t-code{background:rgba(0,0,0,.35);border:1px solid var(--t-border);padding:8px 10px;margin:6px 0;white-space:pre-wrap;word-break:break-word;font:inherit}
 .term-out .t-sai.is-wait{color:var(--text-dim);animation:recBlink 1s steps(1) infinite}
 .term-out .t-sai.is-typing::after{content:'▌';color:var(--t-accent);margin-left:1px;animation:recBlink 1s steps(1) infinite}
 .term-out .t-sai .t-tool{color:var(--text-dim)}
@@ -395,6 +398,7 @@ html.room-open,html.room-open body{overflow:hidden}
 @keyframes termReward{0%{box-shadow:0 0 0 rgba(34,197,94,0)}20%{box-shadow:0 0 36px rgba(34,197,94,.7),0 0 0 1px #22c55e}100%{box-shadow:0 0 32px var(--t-glow),0 16px 40px rgba(0,0,0,.6)}}
 @media (max-width:600px){
   .term{left:8px;right:8px;width:auto;bottom:56px;height:min(60vh,420px)}
+  .term.is-max{top:8px;right:8px;height:auto}
   .term-launch{left:8px;bottom:8px}
 }
 
@@ -1021,7 +1025,7 @@ body.fx-off .project-card::before,body.fx-off .sysinfo-card::before,body.fx-off 
      answers to "parallax --reveal" -->
 <button class="term-launch" id="termLaunch" type="button" aria-controls="termPanel" aria-expanded="false" data-profile="guest"><span>&gt;_</span><em id="termLaunchLabel">GUEST_TERMINAL</em></button>
 <div class="term" id="termPanel" aria-hidden="true" data-profile="guest" role="dialog" aria-label="terminal">
-  <div class="term-bar"><span class="lt-dots"><i></i><i></i><i></i></span><span id="termTitle">GUEST_TERMINAL · tty0</span><span class="term-link" id="termLink" hidden></span><span class="term-key">~</span><button class="term-close" id="termClose" type="button" aria-label="×">×</button></div>
+  <div class="term-bar"><span class="lt-dots"><i></i><i></i><i></i></span><span id="termTitle">GUEST_TERMINAL · tty0</span><span class="term-link" id="termLink" hidden></span><button class="term-key" id="termSize" type="button" aria-pressed="false" aria-label="развернуть / свернуть" title="развернуть / свернуть · клавиша ~ открывает и закрывает терминал">~</button><button class="term-close" id="termClose" type="button" aria-label="×">×</button></div>
   <div class="term-out" id="termOut" aria-live="polite"></div>
   <label class="term-line"><span class="term-prompt" id="termPrompt">guest@parallax:~$</span><input class="term-in" id="termIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal"></label>
 </div>
