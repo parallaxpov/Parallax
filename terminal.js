@@ -287,6 +287,7 @@ function saiTyper(div, onAction){
       shown += parts[i].slice(0, left); left -= parts[i].length;
     }
     div.innerHTML = mdLite(clean(shown).replace(/^\s+/, ''));
+    fitLong(div);
     out.scrollTop = out.scrollHeight;
   }
   function tick(){
@@ -437,9 +438,26 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&
 // can never inject HTML; only these patterns become tags: ``` blocks,
 // `code`, **bold**, # headings, "* " / "- " list bullets, and the
 // program's own «⚙» / «⚠» lines (styled apart from the model's words).
+// A small model draws markdown tables the terminal can't show (and <br>
+// inside cells): each row becomes a line «• first cell — header: cell; …».
+function untable(s){
+  const lines = s.split('\n'), outl = [];
+  let head = null;
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!/^\|.*\|$/.test(line)){ head = null; outl.push(raw); continue; }
+    const cells = line.slice(1, -1).split('|').map(c => c.trim().replace(/&lt;br\s*\/?&gt;/gi, ' '));
+    if(cells.every(c => /^:?-{2,}:?$/.test(c) || !c)) continue;      // |:---|:---|
+    if(!head){ head = cells; continue; }
+    const rest = cells.slice(1).map((c, i) => head[i + 1] ? `${head[i + 1]}: ${c}` : c).filter(Boolean);
+    outl.push(`• ${cells[0]}${rest.length ? ' — ' + rest.join('; ') : ''}`);
+  }
+  return outl.join('\n').replace(/&lt;br\s*\/?&gt;/gi, '\n');
+}
+
 function mdLite(src){
   const blocks = [];
-  let s = esc(src).replace(/```[^\n]*\n?([\s\S]*?)(```|$)/g, (m, code) => {
+  let s = untable(esc(src)).replace(/```[^\n]*\n?([\s\S]*?)(```|$)/g, (m, code) => {
     blocks.push(code.replace(/\n$/, ''));
     return '\u0000' + (blocks.length - 1) + '\u0000';
   });
@@ -491,6 +509,19 @@ async function runLink(arg){
   say(T_.linkChecking(esc(url)));
   const st = await probeLink();
   say(st && st.ok ? t().linkOn(esc(url), esc(st.version)) : t().linkOffline(esc(url)));
+}
+
+// The ~ button: the terminal over almost the whole page and back. A long
+// answer expands it by itself — unless the viewer has chosen a size.
+let sizeChosen = false;
+function setMax(on, byUser){
+  if(byUser) sizeChosen = true;
+  panel.classList.toggle('is-max', on);
+  $('termSize').setAttribute('aria-pressed', on ? 'true' : 'false');
+  out.scrollTop = out.scrollHeight;
+}
+function fitLong(div){
+  if(!sizeChosen && !panel.classList.contains('is-max') && div.offsetHeight > out.clientHeight * 0.85) setMax(true, false);
 }
 
 function setOpen(open){
@@ -630,6 +661,7 @@ input.addEventListener('keydown', e => {
 
 launch.addEventListener('click', () => setOpen(!isOpen()));
 $('termClose').addEventListener('click', () => { setOpen(false); launch.focus({preventScroll: true}); });
+$('termSize').addEventListener('click', () => { setMax(!panel.classList.contains('is-max'), true); input.focus({preventScroll: true}); });
 panel.addEventListener('mousedown', e => { if(e.target === panel || e.target === out) setTimeout(() => input.focus({preventScroll: true}), 0); });
 
 // ~ / ` (the key left of 1, whatever the layout) opens and closes the
